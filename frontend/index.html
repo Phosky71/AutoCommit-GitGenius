@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Commit App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .path-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .path-selector input {
+            flex: 1;
+        }
+
+        .api-key-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .api-key-group .input-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+        }
+
+        .btn-info {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        #status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border-left: 4px solid #48bb78;
+            display: block;
+        }
+
+        #status.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border-left: 4px solid #f56565;
+            display: block;
+        }
+
+        #status.info {
+            background: #bee3f8;
+            color: #2c5282;
+            border-left: 4px solid #4299e1;
+            display: block;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .help-text a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .help-text a:hover {
+            text-decoration: underline;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #e6fffa;
+            color: #234e52;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Auto Commit App</h1>
+
+        <div class="section">
+            <div class="section-title">
+                🔑 Gemini API Configuration
+                <span class="badge">gemini-2.0-flash-exp</span>
+            </div>
+            <div class="api-key-group">
+                <div class="input-group">
+                    <label for="apiKey">Google Gemini API Key</label>
+                    <input type="password" id="apiKey" placeholder="AIza...">
+                    <div class="help-text">
+                        Get your free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>
+                    </div>
+                </div>
+                <button class="btn-info btn-small" onclick="testApiKey()" style="height: 44px; margin-bottom: 20px;">Test</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📁 Repository</div>
+            <div class="input-group">
+                <label for="repoPath">Git Repository Path</label>
+                <div class="path-selector">
+                    <input type="text" id="repoPath" placeholder="/path/to/your/repository">
+                    <button class="btn-primary btn-small" onclick="selectDirectory()">Browse</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">⚙️ Auto-Commit Settings</div>
+            <div class="input-group">
+                <label for="interval">Interval (minutes)</label>
+                <input type="number" id="interval" value="30" min="1">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="autoStart">
+                <label for="autoStart">Start automatically on app launch</label>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">🎯 Actions</div>
+            <div class="button-group">
+                <button class="btn-secondary" onclick="manualCommit()">Manual Commit</button>
+                <button class="btn-primary" onclick="startAutoCommit()" id="startBtn">Start Auto-Commit</button>
+                <button class="btn-danger" onclick="stopAutoCommit()" id="stopBtn" style="display:none;">Stop</button>
+            </div>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const { invoke } = window.__TAURI__.tauri;
+        const { listen } = window.__TAURI__.event;
+
+        let isRunning = false;
+
+        async function loadConfig() {
+            try {
+                const config = await invoke('load_config_from_file');
+                document.getElementById('repoPath').value = config.repo_path || '';
+                document.getElementById('interval').value = config.interval_minutes;
+                document.getElementById('autoStart').checked = config.auto_start;
+                document.getElementById('apiKey').value = config.gemini_api_key || '';
+
+                if (config.auto_start && config.repo_path && config.gemini_api_key) {
+                    await startAutoCommit();
+                }
+            } catch (e) {
+                console.error('Error loading config:', e);
+            }
+        }
+
+        async function saveConfig() {
+            const config = {
+                repo_path: document.getElementById('repoPath').value,
+                auto_commit_enabled: isRunning,
+                interval_minutes: parseInt(document.getElementById('interval').value),
+                auto_start: document.getElementById('autoStart').checked,
+                gemini_api_key: document.getElementById('apiKey').value,
+            };
+
+            try {
+                await invoke('save_config', { config });
+            } catch (e) {
+                showStatus('Error saving configuration: ' + e, 'error');
+            }
+        }
+
+        async function testApiKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                showStatus('Please enter an API key first', 'error');
+                return;
+            }
+
+            showStatus('Testing API key...', 'info');
+            try {
+                const result = await invoke('test_api_key', { apiKey });
+                showStatus('✅ ' + result, 'success');
+                await saveConfig();
+            } catch (e) {
+                showStatus('❌ ' + e, 'error');
+            }
+        }
+
+        async function selectDirectory() {
+            try {
+                const path = await invoke('select_directory');
+                document.getElementById('repoPath').value = path;
+                await saveConfig();
+                showStatus('Directory selected successfully', 'success');
+            } catch (e) {
+                showStatus('Error selecting directory: ' + e, 'error');
+            }
+        }
+
+        async function manualCommit() {
+            const path = document.getElementById('repoPath').value;
+            const apiKey = document.getElementById('apiKey').value;
+
+            if (!apiKey) {
+                showStatus('Please configure your Gemini API key first', 'error');
+                return;
+            }
+
+            if (!path) {
+                showStatus('Please select a repository', 'error');
+                return;
+            }
+
+            showStatus('Analyzing changes and generating commit message...', 'info');
+            try {
+                const result = await invoke('run_commit', { path });
+                showStatus('✅ Commit successful: ' + result, 'success');
+            } catch (e) {
+                showStatus('❌ Error: ' + e, 'error');
+            }
+        }
+
+        async function startAutoCommit() {
+            const path = document.getElementById('repoPath').value;
+            const apiKey = document.getElementById('apiKey').value;
+
+            if (!apiKey) {
+                showStatus('Please configure your Gemini API key first', 'error');
+                return;
+            }
+
+            if (!path) {
+                showStatus('Please select a repository', 'error');
+                return;
+            }
+
+            await saveConfig();
+
+            try {
+                await invoke('start_auto_commit');
+                isRunning = true;
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'block';
+                showStatus('🟢 Auto-commit started with Gemini AI', 'success');
+            } catch (e) {
+                showStatus('Error starting auto-commit: ' + e, 'error');
+            }
+        }
+
+        async function stopAutoCommit() {
+            try {
+                await invoke('stop_auto_commit');
+                isRunning = false;
+                document.getElementById('startBtn').style.display = 'block';
+                document.getElementById('stopBtn').style.display = 'none';
+                showStatus('Auto-commit stopped', 'info');
+            } catch (e) {
+                showStatus('Error stopping auto-commit: ' + e, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = type;
+        }
+
+        // Event listeners
+        listen('commit-status', (event) => {
+            showStatus('✅ Auto-commit: ' + event.payload, 'success');
+        });
+
+        listen('commit-error', (event) => {
+            showStatus('❌ Auto-commit error: ' + event.payload, 'error');
+        });
+
+        // Auto-save on input changes
+        document.getElementById('interval').addEventListener('change', saveConfig);
+        document.getElementById('autoStart').addEventListener('change', saveConfig);
+
+        // Load config on start
+        loadConfig();
+    </script>
+</body>
+</html>

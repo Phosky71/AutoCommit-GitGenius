@@ -1,0 +1,22 @@
+{
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "frontendDist": "../frontend"
+  },
+  "tauri": {
+    "windows": [{ 
+      "title": "Auto Commit App", 
+      "width": 650, 
+      "height": 700,
+      "resizable": true,
+      "center": true
+    }],
+    "allowlist": {
+      "dialog": {
+        "all": true,
+        "open": true
+      }
+    }
+  }
+}

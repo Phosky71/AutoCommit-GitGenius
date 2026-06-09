@@ -1,450 +1,477 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Commit App</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto Commit</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg: #0f0f11;
+            --surface: #1a1a1f;
+            --surface-2: #222228;
+            --border: #2e2e38;
+            --text: #e8e8ed;
+            --text-muted: #8a8a9a;
+            --accent: #7c6af7;
+            --accent-hover: #9585fa;
+            --success: #4caf86;
+            --error: #e06c75;
+            --warning: #e5c07b;
+            --radius: 8px;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.5;
             min-height: 100vh;
-        }
-
-        .container {
-            max-width: 650px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 30px;
+            padding: 20px;
         }
 
         h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 28px;
-        }
-
-        .section {
-            margin-bottom: 25px;
-            padding-bottom: 25px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .section:last-child {
-            border-bottom: none;
-        }
-
-        .section-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
-            color: #667eea;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 8px;
+            color: var(--text);
         }
 
-        .input-group {
-            margin-bottom: 15px;
+        h1 span { color: var(--accent); }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            margin-top: 10px;
         }
+        label:first-of-type { margin-top: 0; }
 
-        input[type="text"],
-        input[type="number"],
-        input[type="password"] {
+        input, select {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus,
-        input[type="number"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .path-selector {
-            display: flex;
-            gap: 10px;
-        }
-
-        .path-selector input {
-            flex: 1;
-        }
-
-        .api-key-group {
-            display: flex;
-            gap: 10px;
-            align-items: flex-end;
-        }
-
-        .api-key-group .input-group {
-            flex: 1;
-            margin-bottom: 0;
-        }
-
-        button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: #48bb78;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #38a169;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
-        }
-
-        .btn-danger {
-            background: #f56565;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #e53e3e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
-        }
-
-        .btn-info {
-            background: #4299e1;
-            color: white;
-        }
-
-        .btn-info:hover {
-            background: #3182ce;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
-        }
-
-        .btn-small {
-            padding: 8px 16px;
+            padding: 8px 10px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
             font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+        input[type="password"] { letter-spacing: 0.1em; }
+
+        .provider-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 12px;
         }
 
-        .checkbox-group {
+        .provider-btn {
+            padding: 7px 10px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
         }
-
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
+        .provider-btn:hover { border-color: var(--accent); color: var(--text); }
+        .provider-btn.active {
+            border-color: var(--accent);
+            background: rgba(124, 106, 247, 0.12);
+            color: var(--text);
         }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
+        .provider-btn .badge {
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-left: auto;
         }
+        .badge.local { background: rgba(76, 175, 134, 0.2); color: var(--success); }
+        .badge.cloud { background: rgba(229, 192, 123, 0.2); color: var(--warning); }
 
-        .button-group button {
-            flex: 1;
-        }
-
-        #status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 14px;
+        .key-required {
+            font-size: 11px;
+            color: var(--warning);
+            margin-top: 6px;
             display: none;
         }
+        .key-required.show { display: block; }
 
-        #status.success {
-            background: #c6f6d5;
-            color: #22543d;
-            border-left: 4px solid #48bb78;
-            display: block;
+        .row { display: flex; gap: 8px; }
+        .row input { flex: 1; }
+
+        .btn {
+            padding: 9px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+            width: 100%;
+            margin-top: 8px;
         }
-
-        #status.error {
-            background: #fed7d7;
-            color: #742a2a;
-            border-left: 4px solid #f56565;
-            display: block;
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
         }
+        .btn-outline:hover { border-color: var(--accent); color: var(--text); }
+        .btn-danger { background: rgba(224, 108, 117, 0.15); border: 1px solid var(--error); color: var(--error); }
+        .btn-danger:hover { background: rgba(224, 108, 117, 0.25); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin-top: 0; }
 
-        #status.info {
-            background: #bee3f8;
-            color: #2c5282;
-            border-left: 4px solid #4299e1;
-            display: block;
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            cursor: pointer;
         }
+        .checkbox-row input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+        .checkbox-row span { font-size: 13px; color: var(--text-muted); }
 
-        .help-text {
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+        .actions-grid .btn { margin-top: 0; }
+
+        #status-box {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
             font-size: 12px;
-            color: #718096;
-            margin-top: 5px;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            color: var(--text-muted);
+            min-height: 44px;
+            max-height: 120px;
+            overflow-y: auto;
+            margin-top: 8px;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
+        .status-ok { color: var(--success); }
+        .status-err { color: var(--error); }
+        .status-info { color: var(--accent); }
 
-        .help-text a {
-            color: #667eea;
-            text-decoration: none;
-        }
+        .divider { border: none; border-top: 1px solid var(--border); margin: 4px 0 12px; }
 
-        .help-text a:hover {
-            text-decoration: underline;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
+        .timer-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
             font-size: 11px;
-            font-weight: 600;
-            background: #e6fffa;
-            color: #234e52;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+        .dot.running {
+            background: var(--success);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 Auto Commit App</h1>
+<h1>⚡ Auto <span>Commit</span></h1>
 
-        <div class="section">
-            <div class="section-title">
-                🔑 Gemini API Configuration
-                <span class="badge">gemini-2.0-flash-exp</span>
-            </div>
-            <div class="api-key-group">
-                <div class="input-group">
-                    <label for="apiKey">Google Gemini API Key</label>
-                    <input type="password" id="apiKey" placeholder="AIza...">
-                    <div class="help-text">
-                        Get your free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>
-                    </div>
-                </div>
-                <button class="btn-info btn-small" onclick="testApiKey()" style="height: 44px; margin-bottom: 20px;">Test</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">📁 Repository</div>
-            <div class="input-group">
-                <label for="repoPath">Git Repository Path</label>
-                <div class="path-selector">
-                    <input type="text" id="repoPath" placeholder="/path/to/your/repository">
-                    <button class="btn-primary btn-small" onclick="selectDirectory()">Browse</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">⚙️ Auto-Commit Settings</div>
-            <div class="input-group">
-                <label for="interval">Interval (minutes)</label>
-                <input type="number" id="interval" value="30" min="1">
-            </div>
-            <div class="checkbox-group">
-                <input type="checkbox" id="autoStart">
-                <label for="autoStart">Start automatically on app launch</label>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">🎯 Actions</div>
-            <div class="button-group">
-                <button class="btn-secondary" onclick="manualCommit()">Manual Commit</button>
-                <button class="btn-primary" onclick="startAutoCommit()" id="startBtn">Start Auto-Commit</button>
-                <button class="btn-danger" onclick="stopAutoCommit()" id="stopBtn" style="display:none;">Stop</button>
-            </div>
-        </div>
-
-        <div id="status"></div>
+<!-- PROVIDER SELECTOR -->
+<div class="card">
+    <div class="card-title">🤖 LLM Provider</div>
+    <div class="provider-grid" id="provider-grid">
+        <button class="provider-btn active" data-provider="lm_studio" onclick="selectProvider(this)">
+            🖥️ LM Studio <span class="badge local">local</span>
+        </button>
+        <button class="provider-btn" data-provider="ollama" onclick="selectProvider(this)">
+            🦙 Ollama <span class="badge local">local</span>
+        </button>
+        <button class="provider-btn" data-provider="local_ai" onclick="selectProvider(this)">
+            🔧 LocalAI <span class="badge local">local</span>
+        </button>
+        <button class="provider-btn" data-provider="custom" onclick="selectProvider(this)">
+            ⚙️ Custom <span class="badge local">local</span>
+        </button>
+        <button class="provider-btn" data-provider="open_ai" onclick="selectProvider(this)">
+            ✦ OpenAI <span class="badge cloud">cloud</span>
+        </button>
+        <button class="provider-btn" data-provider="groq" onclick="selectProvider(this)">
+            ⚡ Groq <span class="badge cloud">cloud</span>
+        </button>
+        <button class="provider-btn" data-provider="gemini" onclick="selectProvider(this)">
+            ♊ Gemini <span class="badge cloud">cloud</span>
+        </button>
+        <button class="provider-btn" data-provider="anthropic" onclick="selectProvider(this)">
+            ◆ Claude <span class="badge cloud">cloud</span>
+        </button>
+        <button class="provider-btn" data-provider="mistral" onclick="selectProvider(this)">
+            🌬️ Mistral <span class="badge cloud">cloud</span>
+        </button>
+        <button class="provider-btn" data-provider="together" onclick="selectProvider(this)">
+            🤝 Together <span class="badge cloud">cloud</span>
+        </button>
+        <button class="provider-btn" data-provider="open_router" onclick="selectProvider(this)">
+            🔀 OpenRouter <span class="badge cloud">cloud</span>
+        </button>
     </div>
 
-    <script>
-        const { invoke } = window.__TAURI__.tauri;
-        const { listen } = window.__TAURI__.event;
+    <label>Base URL</label>
+    <input type="text" id="base-url" placeholder="http://localhost:1234/v1" />
 
-        let isRunning = false;
+    <label>Model Name</label>
+    <input type="text" id="model-name" placeholder="model-name" />
 
-        async function loadConfig() {
-            try {
-                const config = await invoke('load_config_from_file');
-                document.getElementById('repoPath').value = config.repo_path || '';
-                document.getElementById('interval').value = config.interval_minutes;
-                document.getElementById('autoStart').checked = config.auto_start;
-                document.getElementById('apiKey').value = config.gemini_api_key || '';
+    <label>API Key</label>
+    <input type="password" id="api-key" placeholder="sk-... (leave empty for local)" />
+    <p class="key-required" id="key-warning">⚠️ API key required for this provider</p>
 
-                if (config.auto_start && config.repo_path && config.gemini_api_key) {
-                    await startAutoCommit();
+    <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="testConnection()">
+        🔌 Test Connection
+    </button>
+</div>
+
+<!-- REPOSITORY -->
+<div class="card">
+    <div class="card-title">📁 Repository</div>
+    <label>Git Repository Path</label>
+    <input type="text" id="repo-path" placeholder="C:\Users\you\project or /home/you/project" />
+</div>
+
+<!-- SETTINGS -->
+<div class="card">
+    <div class="card-title">⚙️ Auto-Commit Settings</div>
+    <label>Interval (minutes)</label>
+    <input type="number" id="interval" value="30" min="1" max="1440" />
+
+    <label class="checkbox-row">
+        <input type="checkbox" id="auto-start" />
+        <span>Start automatically on app launch</span>
+    </label>
+
+    <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="saveConfig()">
+        💾 Save Config
+    </button>
+</div>
+
+<!-- ACTIONS -->
+<div class="card">
+    <div class="card-title">🎯 Actions</div>
+    <div class="actions-grid">
+        <button class="btn btn-primary" onclick="manualCommit()">⚡ Manual Commit</button>
+        <button class="btn btn-outline" id="btn-start" onclick="startAuto()">▶ Start Auto</button>
+    </div>
+    <button class="btn btn-danger" id="btn-stop" onclick="stopAuto()" style="display:none;">
+        ⏹ Stop Auto-Commit
+    </button>
+
+    <div class="timer-status">
+        <div class="dot" id="status-dot"></div>
+        <span id="timer-label">Idle</span>
+    </div>
+
+    <div id="status-box">Ready.</div>
+</div>
+
+<script type="module">
+    import { invoke } from 'https://unpkg.com/@tauri-apps/api@2/core';
+    import { listen } from 'https://unpkg.com/@tauri-apps/api@2/event';
+
+    // ---- PROVIDER DEFAULTS ----
+    const PROVIDER_DEFAULTS = {
+        lm_studio:   { url: 'http://localhost:1234/v1',                                      model: 'local-model' },
+        ollama:      { url: 'http://localhost:11434/v1',                                     model: 'llama3.2' },
+        local_ai:    { url: 'http://localhost:8080/v1',                                      model: 'gpt-4' },
+        custom:      { url: 'http://localhost:8000/v1',                                      model: 'local-model' },
+        open_ai:     { url: 'https://api.openai.com/v1',                                    model: 'gpt-4o-mini' },
+        groq:        { url: 'https://api.groq.com/openai/v1',                               model: 'llama-3.3-70b-versatile' },
+        gemini:      { url: 'https://generativelanguage.googleapis.com/v1beta/openai',      model: 'gemini-2.0-flash' },
+        anthropic:   { url: 'https://api.anthropic.com/v1',                                 model: 'claude-3-5-haiku-20241022' },
+        mistral:     { url: 'https://api.mistral.ai/v1',                                    model: 'mistral-small-latest' },
+        together:    { url: 'https://api.together.xyz/v1',                                  model: 'meta-llama/Llama-3-8b-chat-hf' },
+        open_router: { url: 'https://openrouter.ai/api/v1',                                 model: 'openai/gpt-4o-mini' },
+    };
+
+    const CLOUD_PROVIDERS = new Set(['open_ai', 'groq', 'gemini', 'anthropic', 'mistral', 'together', 'open_router']);
+
+    let currentProvider = 'lm_studio';
+
+    // ---- UI HELPERS ----
+    const $ = id => document.getElementById(id);
+
+    function setStatus(msg, type = 'info') {
+        const box = $('status-box');
+        box.textContent = msg;
+        box.className = 'status-' + type;
+    }
+
+    function setTimerRunning(running) {
+        $('status-dot').classList.toggle('running', running);
+        $('timer-label').textContent = running ? 'Auto-commit running…' : 'Idle';
+        $('btn-start').style.display = running ? 'none' : '';
+        $('btn-stop').style.display  = running ? '' : 'none';
+    }
+
+    // ---- PROVIDER SELECTION ----
+    window.selectProvider = function(btn) {
+        document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentProvider = btn.dataset.provider;
+
+        const defaults = PROVIDER_DEFAULTS[currentProvider];
+        $('base-url').value   = defaults.url;
+        $('model-name').value = defaults.model;
+
+        const needsKey = CLOUD_PROVIDERS.has(currentProvider);
+        $('key-warning').classList.toggle('show', needsKey);
+    };
+
+    // ---- LOAD CONFIG ----
+    async function loadConfig() {
+        try {
+            const cfg = await invoke('load_config_from_file');
+            if (cfg.provider) {
+                currentProvider = cfg.provider;
+                const btn = document.querySelector(`[data-provider="${cfg.provider}"]`);
+                if (btn) {
+                    document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
                 }
-            } catch (e) {
-                console.error('Error loading config:', e);
+                const needsKey = CLOUD_PROVIDERS.has(currentProvider);
+                $('key-warning').classList.toggle('show', needsKey);
             }
+            $('base-url').value   = cfg.llm_base_url   || '';
+            $('model-name').value = cfg.llm_model_name || '';
+            $('api-key').value    = cfg.llm_api_key    || '';
+            $('repo-path').value  = cfg.repo_path      || '';
+            $('interval').value   = cfg.interval_minutes || 30;
+            $('auto-start').checked = cfg.auto_start || false;
+
+            if (cfg.auto_start && cfg.repo_path) {
+                await startAuto();
+            }
+            setStatus('Config loaded.', 'ok');
+        } catch (e) {
+            setStatus('No config found, using defaults.', 'info');
         }
+    }
 
-        async function saveConfig() {
-            const config = {
-                repo_path: document.getElementById('repoPath').value,
-                auto_commit_enabled: isRunning,
-                interval_minutes: parseInt(document.getElementById('interval').value),
-                auto_start: document.getElementById('autoStart').checked,
-                gemini_api_key: document.getElementById('apiKey').value,
-            };
-
-            try {
-                await invoke('save_config', { config });
-            } catch (e) {
-                showStatus('Error saving configuration: ' + e, 'error');
-            }
+    // ---- SAVE CONFIG ----
+    window.saveConfig = async function() {
+        try {
+            await invoke('save_config', {
+                config: {
+                    provider:           currentProvider,
+                    llm_base_url:       $('base-url').value.trim(),
+                    llm_model_name:     $('model-name').value.trim(),
+                    llm_api_key:        $('api-key').value.trim(),
+                    repo_path:          $('repo-path').value.trim(),
+                    interval_minutes:   parseInt($('interval').value) || 30,
+                    auto_start:         $('auto-start').checked,
+                    auto_commit_enabled: false,
+                }
+            });
+            setStatus('Config saved ✓', 'ok');
+        } catch (e) {
+            setStatus('Error saving config: ' + e, 'err');
         }
+    };
 
-        async function testApiKey() {
-            const apiKey = document.getElementById('apiKey').value;
-            if (!apiKey) {
-                showStatus('Please enter an API key first', 'error');
-                return;
-            }
-
-            showStatus('Testing API key...', 'info');
-            try {
-                const result = await invoke('test_api_key', { apiKey });
-                showStatus('✅ ' + result, 'success');
-                await saveConfig();
-            } catch (e) {
-                showStatus('❌ ' + e, 'error');
-            }
+    // ---- TEST CONNECTION ----
+    window.testConnection = async function() {
+        setStatus('Testing connection…', 'info');
+        try {
+            const result = await invoke('test_connection', {
+                provider:  currentProvider,
+                baseUrl:   $('base-url').value.trim(),
+                model:     $('model-name').value.trim(),
+                apiKey:    $('api-key').value.trim(),
+            });
+            setStatus('✓ ' + result, 'ok');
+        } catch (e) {
+            setStatus('✗ ' + e, 'err');
         }
+    };
 
-        async function selectDirectory() {
-            try {
-                const path = await invoke('select_directory');
-                document.getElementById('repoPath').value = path;
-                await saveConfig();
-                showStatus('Directory selected successfully', 'success');
-            } catch (e) {
-                showStatus('Error selecting directory: ' + e, 'error');
-            }
+    // ---- MANUAL COMMIT ----
+    window.manualCommit = async function() {
+        const path = $('repo-path').value.trim();
+        if (!path) { setStatus('Please set a repository path first.', 'err'); return; }
+        setStatus('Running commit…', 'info');
+        try {
+            const msg = await invoke('run_commit', { path });
+            setStatus(msg === 'No changes to commit' ? 'No changes to commit.' : '✓ ' + msg, msg === 'No changes to commit' ? 'info' : 'ok');
+        } catch (e) {
+            setStatus('✗ ' + e, 'err');
         }
+    };
 
-        async function manualCommit() {
-            const path = document.getElementById('repoPath').value;
-            const apiKey = document.getElementById('apiKey').value;
-
-            if (!apiKey) {
-                showStatus('Please configure your Gemini API key first', 'error');
-                return;
-            }
-
-            if (!path) {
-                showStatus('Please select a repository', 'error');
-                return;
-            }
-
-            showStatus('Analyzing changes and generating commit message...', 'info');
-            try {
-                const result = await invoke('run_commit', { path });
-                showStatus('✅ Commit successful: ' + result, 'success');
-            } catch (e) {
-                showStatus('❌ Error: ' + e, 'error');
-            }
+    // ---- AUTO COMMIT ----
+    window.startAuto = async function() {
+        await saveConfig();
+        try {
+            await invoke('start_auto_commit');
+            setTimerRunning(true);
+            setStatus('Auto-commit started.', 'ok');
+        } catch (e) {
+            setStatus('✗ ' + e, 'err');
         }
+    };
 
-        async function startAutoCommit() {
-            const path = document.getElementById('repoPath').value;
-            const apiKey = document.getElementById('apiKey').value;
-
-            if (!apiKey) {
-                showStatus('Please configure your Gemini API key first', 'error');
-                return;
-            }
-
-            if (!path) {
-                showStatus('Please select a repository', 'error');
-                return;
-            }
-
-            await saveConfig();
-
-            try {
-                await invoke('start_auto_commit');
-                isRunning = true;
-                document.getElementById('startBtn').style.display = 'none';
-                document.getElementById('stopBtn').style.display = 'block';
-                showStatus('🟢 Auto-commit started with Gemini AI', 'success');
-            } catch (e) {
-                showStatus('Error starting auto-commit: ' + e, 'error');
-            }
+    window.stopAuto = async function() {
+        try {
+            await invoke('stop_auto_commit');
+            setTimerRunning(false);
+            setStatus('Auto-commit stopped.', 'info');
+        } catch (e) {
+            setStatus('✗ ' + e, 'err');
         }
+    };
 
-        async function stopAutoCommit() {
-            try {
-                await invoke('stop_auto_commit');
-                isRunning = false;
-                document.getElementById('startBtn').style.display = 'block';
-                document.getElementById('stopBtn').style.display = 'none';
-                showStatus('Auto-commit stopped', 'info');
-            } catch (e) {
-                showStatus('Error stopping auto-commit: ' + e, 'error');
-            }
-        }
+    // ---- EVENTS FROM BACKEND ----
+    listen('commit-status', e => setStatus('✓ ' + e.payload, 'ok'));
+    listen('commit-error',  e => setStatus('✗ ' + e.payload, 'err'));
 
-        function showStatus(message, type) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = type;
-        }
-
-        // Event listeners
-        listen('commit-status', (event) => {
-            showStatus('✅ Auto-commit: ' + event.payload, 'success');
-        });
-
-        listen('commit-error', (event) => {
-            showStatus('❌ Auto-commit error: ' + event.payload, 'error');
-        });
-
-        // Auto-save on input changes
-        document.getElementById('interval').addEventListener('change', saveConfig);
-        document.getElementById('autoStart').addEventListener('change', saveConfig);
-
-        // Load config on start
-        loadConfig();
-    </script>
+    // ---- INIT ----
+    loadConfig();
+</script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Emitter, State, Manager};
+use tauri::{AppHandle, Emitter, State};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tokio::time::{interval, Duration};

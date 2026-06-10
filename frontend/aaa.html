@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoCommit</title>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap" rel="stylesheet" />
+    <style>
+        /* ── TOKENS ─────────────────────────────────────────── */
+        :root,[data-theme="light"]{
+            --color-bg:#f7f6f2;--color-surface:#f9f8f5;--color-surface-2:#fbfbf9;
+            --color-surface-offset:#f3f0ec;--color-surface-dynamic:#e6e4df;
+            --color-divider:#dcd9d5;--color-border:#d4d1ca;
+            --color-text:#28251d;--color-text-muted:#7a7974;--color-text-faint:#bab9b4;
+            --color-text-inverse:#f9f8f4;
+            --color-primary:#01696f;--color-primary-hover:#0c4e54;--color-primary-active:#0f3638;
+            --color-primary-highlight:#cedcd8;
+            --color-success:#437a22;--color-success-hover:#2e5c10;--color-success-highlight:#d4dfcc;
+            --color-warning:#964219;--color-warning-highlight:#ddcfc6;
+            --color-error:#a12c7b;--color-error-hover:#7d1e5e;--color-error-highlight:#e0ced7;
+            --color-orange:#da7101;--color-orange-highlight:#e7d7c4;
+            --radius-sm:.375rem;--radius-md:.5rem;--radius-lg:.75rem;--radius-xl:1rem;--radius-full:9999px;
+            --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.25rem;
+            --space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;
+            --shadow-sm:0 1px 2px oklch(0.2 0.01 80/0.06);
+            --shadow-md:0 4px 12px oklch(0.2 0.01 80/0.08);
+            --shadow-lg:0 12px 32px oklch(0.2 0.01 80/0.12);
+            --transition-interactive:180ms cubic-bezier(.16,1,.3,1);
+            --font-body:'Satoshi',system-ui,sans-serif;
+            --text-xs:clamp(.75rem,.7rem + .25vw,.875rem);
+            --text-sm:clamp(.875rem,.8rem + .35vw,1rem);
+            --text-base:clamp(1rem,.95rem + .25vw,1.125rem);
+            --text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);
+            --sidebar-w:220px;
+        }
+        [data-theme="dark"]{
+            --color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;
+            --color-surface-offset:#1d1c1a;--color-surface-dynamic:#2d2c2a;
+            --color-divider:#262523;--color-border:#393836;
+            --color-text:#cdccca;--color-text-muted:#797876;--color-text-faint:#5a5957;
+            --color-text-inverse:#2b2a28;
+            --color-primary:#4f98a3;--color-primary-hover:#227f8b;--color-primary-active:#1a626b;
+            --color-primary-highlight:#313b3b;
+            --color-success:#6daa45;--color-success-hover:#4d8f25;--color-success-highlight:#3a4435;
+            --color-warning:#bb653b;--color-warning-highlight:#564942;
+            --color-error:#d163a7;--color-error-hover:#b9478f;--color-error-highlight:#4c3d46;
+            --color-orange:#fdab43;--color-orange-highlight:#564b3e;
+            --shadow-sm:0 1px 2px oklch(0 0 0/.2);
+            --shadow-md:0 4px 12px oklch(0 0 0/.3);
+            --shadow-lg:0 12px 32px oklch(0 0 0/.4);
+        }
+        @media(prefers-color-scheme:dark){:root:not([data-theme]){
+            --color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;
+            --color-surface-offset:#1d1c1a;--color-surface-dynamic:#2d2c2a;
+            --color-divider:#262523;--color-border:#393836;
+            --color-text:#cdccca;--color-text-muted:#797876;--color-text-faint:#5a5957;
+            --color-text-inverse:#2b2a28;
+            --color-primary:#4f98a3;--color-primary-hover:#227f8b;--color-primary-active:#1a626b;
+            --color-primary-highlight:#313b3b;
+            --color-success:#6daa45;--color-success-highlight:#3a4435;
+            --color-warning:#bb653b;--color-warning-highlight:#564942;
+            --color-error:#d163a7;--color-error-hover:#b9478f;--color-error-highlight:#4c3d46;
+            --color-orange:#fdab43;--color-orange-highlight:#564b3e;
+            --shadow-sm:0 1px 2px oklch(0 0 0/.2);
+            --shadow-md:0 4px 12px oklch(0 0 0/.3);
+            --shadow-lg:0 12px 32px oklch(0 0 0/.4);
+        }}
+
+        /* ── RESET ──────────────────────────────────────────── */
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;height:100%}
+        body{min-height:100vh;font-family:var(--font-body);font-size:var(--text-sm);
+            color:var(--color-text);background:var(--color-bg);display:flex;flex-direction:column;overflow:hidden}
+        input,button,select,textarea{font:inherit;color:inherit}
+        button{cursor:pointer;background:none;border:none}
+        img,svg{display:block;max-width:100%}
+        ul{list-style:none}
+        a,button,[role=button],input,select,textarea{
+            transition:color var(--transition-interactive),
+            background var(--transition-interactive),
+            border-color var(--transition-interactive),
+            box-shadow var(--transition-interactive),
+            opacity var(--transition-interactive)}
+        :focus-visible{outline:2px solid var(--color-primary);outline-offset:3px;border-radius:var(--radius-sm)}
+
+        /* ── LAYOUT SHELL ───────────────────────────────────── */
+        #app{display:flex;height:100vh;overflow:hidden}
+
+        /* ── SIDEBAR ────────────────────────────────────────── */
+        .sidebar{
+            width:var(--sidebar-w);min-width:var(--sidebar-w);
+            background:var(--color-surface);
+            border-right:1px solid var(--color-border);
+            display:flex;flex-direction:column;
+            padding:var(--space-4) 0;
+            overflow-y:auto;
+            z-index:10;
+            flex-shrink:0;
+        }
+        .sidebar-brand{
+            display:flex;align-items:center;gap:var(--space-3);
+            padding:var(--space-2) var(--space-5) var(--space-5);
+            border-bottom:1px solid var(--color-divider);
+            margin-bottom:var(--space-4);
+        }
+        .sidebar-brand img{width:28px;height:28px;border-radius:var(--radius-sm)}
+        .sidebar-brand-name{font-size:var(--text-base);font-weight:700;letter-spacing:-.02em;color:var(--color-text)}
+        .sidebar-nav{display:flex;flex-direction:column;gap:var(--space-1);padding:0 var(--space-3)}
+        .nav-item{
+            display:flex;align-items:center;gap:var(--space-3);
+            padding:var(--space-2) var(--space-3);
+            border-radius:var(--radius-md);
+            cursor:pointer;
+            font-size:var(--text-sm);font-weight:500;
+            color:var(--color-text-muted);
+            transition:all var(--transition-interactive);
+            user-select:none;
+        }
+        .nav-item:hover{background:var(--color-surface-offset);color:var(--color-text)}
+        .nav-item.active{background:var(--color-primary-highlight);color:var(--color-primary)}
+        .nav-item svg{flex-shrink:0;opacity:.75}
+        .nav-item.active svg{opacity:1}
+        .sidebar-footer{margin-top:auto;padding:var(--space-4) var(--space-5) var(--space-2)}
+        .timer-badge{
+            display:flex;align-items:center;gap:var(--space-2);
+            padding:var(--space-2) var(--space-3);
+            border-radius:var(--radius-md);
+            background:var(--color-surface-offset);
+            font-size:var(--text-xs);font-weight:500;color:var(--color-text-muted);
+            margin-bottom:var(--space-3);
+        }
+        .timer-dot{width:7px;height:7px;border-radius:50%;background:var(--color-text-faint);flex-shrink:0}
+        .timer-dot.running{background:var(--color-success);box-shadow:0 0 6px var(--color-success)}
+
+        /* ── TOPBAR ──────────────────────────────────────────── */
+        .topbar{
+            display:flex;align-items:center;gap:var(--space-4);
+            padding:0 var(--space-6);
+            height:52px;min-height:52px;
+            border-bottom:1px solid var(--color-border);
+            background:var(--color-surface);
+            flex-shrink:0;
+        }
+        .topbar-title{font-size:var(--text-base);font-weight:600;flex:1}
+        .topbar-actions{display:flex;align-items:center;gap:var(--space-2)}
+
+        /* ── MAIN AREA ───────────────────────────────────────── */
+        .main-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+        .main-content{flex:1;overflow-y:auto;padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-6)}
+
+        /* ── BUTTONS ─────────────────────────────────────────── */
+        .btn{
+            display:inline-flex;align-items:center;gap:var(--space-2);
+            padding:var(--space-2) var(--space-4);
+            border-radius:var(--radius-md);
+            font-size:var(--text-sm);font-weight:500;
+            white-space:nowrap;cursor:pointer;border:none;
+        }
+        .btn-primary{background:var(--color-primary);color:#fff}
+        .btn-primary:hover{background:var(--color-primary-hover)}
+        .btn-primary:active{background:var(--color-primary-active)}
+        .btn-secondary{
+            background:transparent;
+            color:var(--color-text-muted);
+            border:1px solid oklch(from var(--color-text) l c h/.15);
+        }
+        .btn-secondary:hover{background:var(--color-surface-offset);color:var(--color-text)}
+        .btn-danger{background:transparent;color:var(--color-error);border:1px solid oklch(from var(--color-error) l c h/.3)}
+        .btn-danger:hover{background:var(--color-error-highlight);color:var(--color-error-hover)}
+        .btn-ghost{background:transparent;color:var(--color-text-muted);padding:var(--space-2)}
+        .btn-ghost:hover{background:var(--color-surface-offset);color:var(--color-text)}
+        .btn-sm{padding:var(--space-1) var(--space-3);font-size:var(--text-xs)}
+        .btn-icon{padding:var(--space-2);border-radius:var(--radius-md)}
+        .btn[disabled]{opacity:.45;cursor:not-allowed;pointer-events:none}
+
+        /* ── THEME TOGGLE ─────────────────────────────────────── */
+        .theme-toggle{
+            display:inline-flex;align-items:center;justify-content:center;
+            width:32px;height:32px;border-radius:var(--radius-md);
+            background:transparent;color:var(--color-text-muted);
+            border:1px solid oklch(from var(--color-text) l c h/.12);
+            cursor:pointer;
+        }
+        .theme-toggle:hover{background:var(--color-surface-offset);color:var(--color-text)}
+
+        /* ── STATUS BADGE ─────────────────────────────────────── */
+        .badge{
+            display:inline-flex;align-items:center;gap:4px;
+            padding:2px var(--space-2);
+            border-radius:var(--radius-full);
+            font-size:var(--text-xs);font-weight:500;
+        }
+        .badge-running{background:var(--color-success-highlight);color:var(--color-success)}
+        .badge-paused{background:var(--color-surface-dynamic);color:var(--color-text-muted)}
+        .badge-ai{background:var(--color-primary-highlight);color:var(--color-primary)}
+        .badge-heuristic{background:var(--color-surface-dynamic);color:var(--color-text-muted)}
+
+        /* ── CARDS ────────────────────────────────────────────── */
+        .card{
+            background:var(--color-surface);
+            border:1px solid oklch(from var(--color-text) l c h/.09);
+            border-radius:var(--radius-lg);
+            padding:var(--space-5);
+            box-shadow:var(--shadow-sm);
+        }
+        .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)}
+        .card-title{font-size:var(--text-base);font-weight:600}
+
+        /* ── REPO CARD ────────────────────────────────────────── */
+        .repo-card{
+            background:var(--color-surface);
+            border:1px solid oklch(from var(--color-text) l c h/.09);
+            border-radius:var(--radius-lg);
+            padding:var(--space-5);
+            box-shadow:var(--shadow-sm);
+            display:grid;gap:var(--space-3);
+            transition:box-shadow var(--transition-interactive);
+        }
+        .repo-card:hover{box-shadow:var(--shadow-md)}
+        .repo-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}
+        .repo-path{
+            font-size:var(--text-sm);font-weight:500;
+            word-break:break-all;line-height:1.4;
+            display:flex;align-items:center;gap:var(--space-2);
+        }
+        .repo-path-dir{color:var(--color-text-muted)}
+        .repo-path-name{color:var(--color-text);font-weight:600}
+        .repo-meta{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap}
+        .repo-meta-item{display:flex;align-items:center;gap:var(--space-1);color:var(--color-text-muted);font-size:var(--text-xs)}
+        .repo-meta-item svg{opacity:.6}
+        .repo-actions{display:flex;align-items:center;gap:var(--space-2)}
+        .repo-toggle{position:relative;width:36px;height:20px}
+        .repo-toggle input{opacity:0;width:0;height:0;position:absolute}
+        .repo-toggle-slider{
+            position:absolute;inset:0;border-radius:var(--radius-full);
+            background:var(--color-border);cursor:pointer;
+            transition:background var(--transition-interactive);
+        }
+        .repo-toggle-slider::after{
+            content:'';position:absolute;top:3px;left:3px;
+            width:14px;height:14px;border-radius:50%;
+            background:#fff;
+            transition:transform var(--transition-interactive);
+        }
+        .repo-toggle input:checked + .repo-toggle-slider{background:var(--color-primary)}
+        .repo-toggle input:checked + .repo-toggle-slider::after{transform:translateX(16px)}
+        .repo-card-actions{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
+
+        /* ── DROPDOWN MENU ─────────────────────────────────────── */
+        .dropdown{position:relative}
+        .dropdown-menu{
+            position:absolute;right:0;top:calc(100% + var(--space-1));z-index:100;
+            background:var(--color-surface-2);
+            border:1px solid var(--color-border);
+            border-radius:var(--radius-lg);
+            box-shadow:var(--shadow-lg);
+            padding:var(--space-1);
+            min-width:140px;
+            opacity:0;pointer-events:none;transform:translateY(-6px);
+            transition:opacity var(--transition-interactive),transform var(--transition-interactive);
+        }
+        .dropdown-menu.open{opacity:1;pointer-events:all;transform:translateY(0)}
+        .dropdown-item{
+            display:flex;align-items:center;gap:var(--space-2);
+            padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);
+            font-size:var(--text-sm);cursor:pointer;white-space:nowrap;
+            color:var(--color-text-muted);
+        }
+        .dropdown-item:hover{background:var(--color-surface-offset);color:var(--color-text)}
+        .dropdown-item.danger:hover{background:var(--color-error-highlight);color:var(--color-error)}
+        .dropdown-divider{height:1px;background:var(--color-divider);margin:var(--space-1) 0}
+
+        /* ── GRID REPOS ───────────────────────────────────────── */
+        .repos-grid{display:grid;grid-template-columns:1fr;gap:var(--space-4)}
+        @media(min-width:700px){.repos-grid{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}}
+
+        /* ── SECTION HEADER ──────────────────────────────────── */
+        .section-header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap}
+        .section-title{font-size:var(--text-lg);font-weight:700}
+        .section-sub{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px}
+
+        /* ── STATS ROW ─────────────────────────────────────────── */
+        .stats-row{display:flex;gap:var(--space-4);flex-wrap:wrap}
+        .stat-card{
+            flex:1;min-width:120px;
+            background:var(--color-surface);
+            border:1px solid oklch(from var(--color-text) l c h/.09);
+            border-radius:var(--radius-lg);
+            padding:var(--space-4) var(--space-5);
+            box-shadow:var(--shadow-sm);
+        }
+        .stat-value{font-size:var(--text-lg);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+        .stat-label{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-1)}
+
+        /* ── FORMS ────────────────────────────────────────────── */
+        .form-group{display:flex;flex-direction:column;gap:var(--space-1)}
+        .form-label{font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em}
+        .form-input,.form-select,.form-textarea{
+            padding:var(--space-2) var(--space-3);
+            border:1px solid var(--color-border);
+            border-radius:var(--radius-md);
+            background:var(--color-surface-offset);
+            color:var(--color-text);
+            font-size:var(--text-sm);
+            width:100%;
+            transition:border-color var(--transition-interactive),box-shadow var(--transition-interactive);
+        }
+        .form-input:focus,.form-select:focus,.form-textarea:focus{
+            border-color:var(--color-primary);
+            box-shadow:0 0 0 3px oklch(from var(--color-primary) l c h/.18);
+            outline:none;
+        }
+        .form-input.error{border-color:var(--color-error)}
+        .form-hint{font-size:var(--text-xs);color:var(--color-text-muted)}
+        .form-hint.success{color:var(--color-success)}
+        .form-hint.error{color:var(--color-error)}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)}
+        .form-grid{display:grid;gap:var(--space-4)}
+        .input-with-btn{display:flex;gap:var(--space-2)}
+        .input-with-btn .form-input{flex:1}
+        .path-picker{display:flex;gap:var(--space-2);align-items:flex-start}
+        .path-picker .form-input{flex:1}
+
+        /* ── TOGGLE SWITCH FORM ──────────────────────────────── */
+        .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-3) 0}
+        .toggle-row-label{font-size:var(--text-sm);font-weight:500}
+        .toggle-row-sub{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px}
+        .switch{position:relative;width:40px;height:22px;flex-shrink:0}
+        .switch input{opacity:0;width:0;height:0;position:absolute}
+        .switch-slider{
+            position:absolute;inset:0;border-radius:var(--radius-full);
+            background:var(--color-border);cursor:pointer;
+            transition:background var(--transition-interactive);
+        }
+        .switch-slider::after{
+            content:'';position:absolute;top:3px;left:3px;
+            width:16px;height:16px;border-radius:50%;
+            background:#fff;transition:transform var(--transition-interactive);
+        }
+        .switch input:checked + .switch-slider{background:var(--color-primary)}
+        .switch input:checked + .switch-slider::after{transform:translateX(18px)}
+
+        /* ── MODAL ────────────────────────────────────────────── */
+        .modal-backdrop{
+            position:fixed;inset:0;z-index:200;
+            background:oklch(0 0 0/.55);backdrop-filter:blur(4px);
+            display:flex;align-items:center;justify-content:center;
+            padding:var(--space-4);
+            opacity:0;pointer-events:none;
+            transition:opacity var(--transition-interactive);
+        }
+        .modal-backdrop.open{opacity:1;pointer-events:all}
+        .modal{
+            background:var(--color-surface);
+            border:1px solid var(--color-border);
+            border-radius:var(--radius-xl);
+            box-shadow:var(--shadow-lg);
+            width:100%;max-width:520px;max-height:90vh;
+            display:flex;flex-direction:column;
+            transform:translateY(16px) scale(.98);
+            transition:transform var(--transition-interactive);
+            overflow:hidden;
+        }
+        .modal-backdrop.open .modal{transform:translateY(0) scale(1)}
+        .modal-header{
+            display:flex;align-items:center;justify-content:space-between;
+            padding:var(--space-5) var(--space-6) var(--space-4);
+            border-bottom:1px solid var(--color-divider);
+            flex-shrink:0;
+        }
+        .modal-title{font-size:var(--text-base);font-weight:700}
+        .modal-body{padding:var(--space-5) var(--space-6);overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-4)}
+        .modal-footer{
+            display:flex;align-items:center;justify-content:flex-end;gap:var(--space-3);
+            padding:var(--space-4) var(--space-6) var(--space-5);
+            border-top:1px solid var(--color-divider);
+            flex-shrink:0;
+        }
+
+        /* ── SETTINGS SECTIONS ────────────────────────────────── */
+        .settings-grid{display:grid;grid-template-columns:1fr;gap:var(--space-6)}
+        @media(min-width:800px){.settings-grid{grid-template-columns:1fr 1fr}}
+        .settings-section{display:flex;flex-direction:column;gap:var(--space-4)}
+        .settings-section-title{
+            font-size:var(--text-sm);font-weight:700;
+            color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.06em;
+            padding-bottom:var(--space-3);border-bottom:1px solid var(--color-divider);
+        }
+        .segment-control{display:flex;background:var(--color-surface-offset);border-radius:var(--radius-md);padding:3px;gap:2px}
+        .segment-btn{
+            flex:1;padding:var(--space-2) var(--space-3);
+            border-radius:calc(var(--radius-md) - 3px);
+            font-size:var(--text-xs);font-weight:500;
+            color:var(--color-text-muted);cursor:pointer;border:none;background:none;text-align:center;
+            transition:all var(--transition-interactive);
+        }
+        .segment-btn.active{background:var(--color-surface);color:var(--color-text);box-shadow:var(--shadow-sm)}
+
+        /* ── HISTORY ──────────────────────────────────────────── */
+        .history-filters{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap}
+        .history-filters .form-select{width:auto;min-width:160px}
+        .history-list{display:flex;flex-direction:column;gap:var(--space-2)}
+        .history-item{
+            background:var(--color-surface);
+            border:1px solid oklch(from var(--color-text) l c h/.09);
+            border-radius:var(--radius-lg);
+            padding:var(--space-4) var(--space-5);
+            display:grid;gap:var(--space-2);
+            box-shadow:var(--shadow-sm);
+        }
+        .history-item-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}
+        .history-msg{font-size:var(--text-sm);font-weight:500;line-height:1.4;font-family:'Satoshi',monospace}
+        .history-meta{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap}
+        .history-meta-item{display:flex;align-items:center;gap:var(--space-1);color:var(--color-text-muted);font-size:var(--text-xs)}
+
+        /* ── EMPTY STATE ──────────────────────────────────────── */
+        .empty-state{
+            display:flex;flex-direction:column;align-items:center;text-align:center;
+            padding:var(--space-12) var(--space-8);
+            color:var(--color-text-muted);
+        }
+        .empty-state-icon{
+            width:48px;height:48px;margin-bottom:var(--space-4);
+            color:var(--color-text-faint);
+        }
+        .empty-state h3{color:var(--color-text);margin-bottom:var(--space-2);font-size:var(--text-base);font-weight:600}
+        .empty-state p{max-width:34ch;margin-bottom:var(--space-5);font-size:var(--text-sm)}
+
+        /* ── DRY RUN OUTPUT ───────────────────────────────────── */
+        .dry-run-box{
+            background:var(--color-surface-offset);
+            border:1px solid var(--color-border);
+            border-radius:var(--radius-md);
+            padding:var(--space-3) var(--space-4);
+            font-size:var(--text-sm);
+            font-family:'Satoshi',monospace;
+            color:var(--color-text);
+            min-height:44px;
+            word-break:break-word;
+        }
+
+        /* ── TOASTS ───────────────────────────────────────────── */
+        #toast-container{
+            position:fixed;bottom:var(--space-6);right:var(--space-6);
+            z-index:9999;display:flex;flex-direction:column;gap:var(--space-2);
+            pointer-events:none;
+        }
+        .toast{
+            display:flex;align-items:center;gap:var(--space-3);
+            padding:var(--space-3) var(--space-4);
+            border-radius:var(--radius-lg);
+            box-shadow:var(--shadow-lg);
+            font-size:var(--text-sm);font-weight:500;
+            pointer-events:all;
+            background:var(--color-surface-2);
+            border:1px solid var(--color-border);
+            max-width:340px;
+            animation:toast-in .22s cubic-bezier(.16,1,.3,1) both;
+        }
+        .toast.removing{animation:toast-out .18s ease forwards}
+        .toast-success{border-color:oklch(from var(--color-success) l c h/.4);color:var(--color-success)}
+        .toast-error{border-color:oklch(from var(--color-error) l c h/.4);color:var(--color-error)}
+        .toast-info{color:var(--color-primary)}
+        @keyframes toast-in{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes toast-out{to{opacity:0;transform:translateY(8px) scale(.95)}}
+
+        /* ── DIFF BADGE ──────────────────────────────────────── */
+        .diff-info{display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}
+        .diff-add{color:var(--color-success);font-size:var(--text-xs);font-weight:600}
+        .diff-del{color:var(--color-error);font-size:var(--text-xs);font-weight:600}
+        .diff-files{color:var(--color-text-muted);font-size:var(--text-xs)}
+
+        /* ── TEST BTN STATE ──────────────────────────────────── */
+        .test-status{font-size:var(--text-xs);padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);font-weight:500}
+        .test-status.ok{background:var(--color-success-highlight);color:var(--color-success)}
+        .test-status.fail{background:var(--color-error-highlight);color:var(--color-error)}
+
+        /* ── SPINNER ─────────────────────────────────────────── */
+        .spin{display:inline-block;width:14px;height:14px;border:2px solid oklch(from currentColor l c h/.3);
+            border-top-color:currentColor;border-radius:50%;
+            animation:spin .6s linear infinite;flex-shrink:0}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* ── SECTION VISIBILITY ────────────────────────────────── */
+        .section-panel{display:none;flex-direction:column;gap:var(--space-6)}
+        .section-panel.active{display:flex}
+
+        /* ── SCROLLBAR ─────────────────────────────────────────── */
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+        ::-webkit-scrollbar-thumb:hover{background:var(--color-text-faint)}
+    </style>
+</head>
+<body>
+<div id="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="icons/icon.ico" alt="AutoCommit logo" onerror="this.style.display='none'">
+            <span class="sidebar-brand-name">AutoCommit</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" data-section="repos">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/></svg>
+                Repositories
+            </div>
+            <div class="nav-item" data-section="settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+                Settings
+            </div>
+            <div class="nav-item" data-section="history">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3 8A9 9 0 1 0 5.65 5.65"/><path d="M12 7v5l4 2"/></svg>
+                History
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="timer-badge">
+                <div class="timer-dot" id="timer-dot"></div>
+                <span id="timer-status-text">Stopped</span>
+            </div>
+            <div style="display:flex;gap:var(--space-2)">
+                <button class="btn btn-primary btn-sm" style="flex:1" id="btn-start-stop" onclick="toggleTimer()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Start
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main-wrap">
+        <div class="topbar">
+            <span class="topbar-title" id="topbar-title">Repositories</span>
+            <div class="topbar-actions">
+                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" id="theme-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="main-content" id="main-content">
+            <!-- ===== REPOS PANEL ===== -->
+            <div class="section-panel active" id="panel-repos">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Repositories</div>
+                        <div class="section-sub" id="repos-count-sub">No repositories configured</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="openAddRepoModal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add repository
+                    </button>
+                </div>
+                <div class="repos-grid" id="repos-grid">
+                    <div class="empty-state" id="repos-empty">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <h3>No repositories yet</h3>
+                        <p>Add a Git repository to start automating commits with AI-generated messages.</p>
+                        <button class="btn btn-primary" onclick="openAddRepoModal()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Add repository
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SETTINGS PANEL ===== -->
+            <div class="section-panel" id="panel-settings">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Settings</div>
+                        <div class="section-sub">LLM provider, smart mode and timer defaults</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save settings
+                    </button>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- LLM Provider -->
+                    <div class="card" style="grid-column:1/-1">
+                        <div class="settings-section-title">LLM Provider</div>
+                        <div class="form-grid" style="margin-top:var(--space-4)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Provider</label>
+                                    <select class="form-select" id="cfg-provider" onchange="onProviderChange()">
+                                        <optgroup label="Local">
+                                            <option value="lm_studio">LM Studio</option>
+                                            <option value="ollama">Ollama</option>
+                                            <option value="local_ai">LocalAI</option>
+                                            <option value="custom">Custom</option>
+                                        </optgroup>
+                                        <optgroup label="Cloud">
+                                            <option value="open_ai">OpenAI</option>
+                                            <option value="groq">Groq</option>
+                                            <option value="gemini">Gemini</option>
+                                            <option value="anthropic">Anthropic</option>
+                                            <option value="mistral">Mistral</option>
+                                            <option value="together">Together AI</option>
+                                            <option value="open_router">OpenRouter</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Model name</label>
+                                    <input class="form-input" id="cfg-model" type="text" placeholder="e.g. gpt-4o-mini" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Base URL</label>
+                                <input class="form-input" id="cfg-base-url" type="text" placeholder="https://api.openai.com/v1" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">API Key</label>
+                                <div class="input-with-btn">
+                                    <input class="form-input" id="cfg-api-key" type="password" placeholder="sk-..." autocomplete="off" />
+                                    <button class="btn btn-secondary btn-sm" onclick="toggleApiKeyVisibility()" title="Show/hide key" style="flex-shrink:0">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" onclick="testConnection()" style="flex-shrink:0" id="btn-test">Test</button>
+                                </div>
+                                <div class="form-hint" id="cfg-api-key-hint">Masked after save. Only required for cloud providers.</div>
+                            </div>
+                            <div id="test-result" style="display:none"></div>
+                        </div>
+                    </div>
+
+                    <!-- Smart mode -->
+                    <div class="card">
+                        <div class="settings-section-title">Smart Mode</div>
+                        <div style="display:flex;flex-direction:column;gap:var(--space-4);margin-top:var(--space-4)">
+                            <div class="form-group">
+                                <label class="form-label">LLM usage strategy</label>
+                                <div class="segment-control" id="smart-mode-ctrl">
+                                    <button class="segment-btn" data-val="always" onclick="setSmartMode('always')">Always</button>
+                                    <button class="segment-btn active" data-val="smart" onclick="setSmartMode('smart')">Smart</button>
+                                    <button class="segment-btn" data-val="never" onclick="setSmartMode('never')">Never</button>
+                                </div>
+                                <div class="form-hint" id="smart-mode-hint" style="margin-top:var(--space-2)">LLM only when diff is significant (recommended)</div>
+                            </div>
+                            <div class="form-group" id="threshold-group">
+                                <label class="form-label">Significance threshold (lines)</label>
+                                <input class="form-input" id="cfg-threshold" type="number" min="1" max="500" value="10" />
+                                <div class="form-hint">Commit is "significant" if total changed lines ≥ this value</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timer defaults -->
+                    <div class="card">
+                        <div class="settings-section-title">Timer Defaults</div>
+                        <div style="display:flex;flex-direction:column;gap:var(--space-4);margin-top:var(--space-4)">
+                            <div class="form-group">
+                                <label class="form-label">Default interval (minutes)</label>
+                                <input class="form-input" id="cfg-interval" type="number" min="1" max="1440" value="30" />
+                                <div class="form-hint">Used as default when adding new repositories</div>
+                            </div>
+                            <div class="toggle-row" style="padding:0">
+                                <div>
+                                    <div class="toggle-row-label">Auto-start on launch</div>
+                                    <div class="toggle-row-sub">Start timer automatically when app opens</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="cfg-auto-start" />
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== HISTORY PANEL ===== -->
+            <div class="section-panel" id="panel-history">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Commit History</div>
+                        <div class="section-sub">All auto-commits recorded locally</div>
+                    </div>
+                    <div style="display:flex;gap:var(--space-2)">
+                        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            CSV
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="exportJSON()">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            JSON
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="clearHistory()">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-row" id="history-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-label">Total commits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-ai">0</div>
+                        <div class="stat-label">AI-generated</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-heuristic">0</div>
+                        <div class="stat-label">Heuristic</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-tokens">0</div>
+                        <div class="stat-label">Est. tokens used</div>
+                    </div>
+                </div>
+
+                <div class="history-filters">
+                    <select class="form-select" id="history-filter-repo" onchange="renderHistory()">
+                        <option value="">All repositories</option>
+                    </select>
+                    <select class="form-select" id="history-filter-type" onchange="renderHistory()">
+                        <option value="">All types</option>
+                        <option value="ai">AI-generated</option>
+                        <option value="heuristic">Heuristic</option>
+                    </select>
+                </div>
+
+                <div class="history-list" id="history-list">
+                    <div class="empty-state" id="history-empty">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v5h5"/><path d="M3 8A9 9 0 1 0 5.65 5.65"/><path d="M12 7v5l4 2"/></svg>
+                        </div>
+                        <h3>No commits yet</h3>
+                        <p>Start the timer or commit manually to see history here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADD / EDIT REPO MODAL ===== -->
+<div class="modal-backdrop" id="modal-repo" role="dialog" aria-modal="true" aria-labelledby="modal-repo-title">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="modal-repo-title">Add repository</span>
+            <button class="btn-ghost btn-icon" onclick="closeRepoModal()" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="repo-edit-id" />
+
+            <div class="form-group">
+                <label class="form-label">Repository path</label>
+                <div class="path-picker">
+                    <input class="form-input" id="repo-path" type="text" placeholder="/home/user/my-project" readonly
+                           style="cursor:pointer;background:var(--color-surface-offset)" onclick="pickDirectory()" />
+                    <button class="btn btn-secondary" onclick="pickDirectory()" style="flex-shrink:0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        Browse
+                    </button>
+                </div>
+                <div class="form-hint" id="repo-path-hint"></div>
+            </div>
+
+            <div id="repo-preview" style="display:none">
+                <div class="dry-run-box" id="repo-diff-preview" style="margin-bottom:0">
+                    Checking diff...
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Interval (minutes)</label>
+                    <input class="form-input" id="repo-interval" type="number" min="1" max="1440" value="30" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cooldown (minutes)</label>
+                    <input class="form-input" id="repo-cooldown" type="number" min="0" max="1440" value="5" />
+                    <div class="form-hint">Min time between commits (0=off)</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Commit prefix</label>
+                <input class="form-input" id="repo-prefix" type="text" placeholder='e.g. "WIP:" or "feat(ui):"' />
+                <div class="form-hint">Prepended to every generated message</div>
+            </div>
+
+            <div class="toggle-row">
+                <div>
+                    <div class="toggle-row-label">Auto push</div>
+                    <div class="toggle-row-sub">Push to remote after every commit</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="repo-push-enabled" onchange="togglePushBranch()" checked />
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="form-group" id="push-branch-group">
+                <label class="form-label">Push target</label>
+                <div class="form-row" style="gap:var(--space-2)">
+                    <div class="form-group">
+                        <label class="form-label">Remote</label>
+                        <input class="form-input" id="repo-push-remote" type="text" placeholder="origin" value="origin" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Branch</label>
+                        <input class="form-input" id="repo-push-branch" type="text" placeholder="main" value="main" />
+                    </div>
+                </div>
+                <div class="form-hint" id="push-branch-hint"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeRepoModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveRepo()" id="btn-save-repo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add repository
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== DRY RUN MODAL ===== -->
+<div class="modal-backdrop" id="modal-dryrun" role="dialog" aria-modal="true" aria-labelledby="modal-dry-title">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="modal-dry-title">Dry Run Preview</span>
+            <button class="btn-ghost btn-icon" onclick="closeDryRunModal()" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Generated commit message</label>
+                <div class="dry-run-box" id="dryrun-result" style="min-height:60px">
+                    <span class="spin"></span>
+                </div>
+            </div>
+            <div id="dryrun-diff" style="display:none">
+                <label class="form-label" style="margin-bottom:var(--space-2)">Diff stats</label>
+                <div class="diff-info" id="dryrun-diff-info"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeDryRunModal()">Close</button>
+            <button class="btn btn-primary" id="btn-commit-from-dry" onclick="">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Commit now
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script>
+    /* ── TAURI BRIDGE ────────────────────────────────────── */
+    const invoke = (cmd, args) => window.__TAURI__?.core?.invoke(cmd, args) ?? Promise.resolve(null);
+    const listen  = (ev, cb) => window.__TAURI__?.event?.listen(ev, cb) ?? (() => {});
+
+    /* ── STATE ───────────────────────────────────────────── */
+    let repos = [];
+    let history = [];
+    let timerRunning = false;
+    let currentSection = 'repos';
+    let editingRepoId = null;
+    let smartMode = 'smart';
+
+    /* ── THEME TOGGLE ────────────────────────────────────── */
+    function toggleTheme(){
+        const html = document.documentElement;
+        const cur = html.getAttribute('data-theme');
+        const next = cur === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        updateThemeIcon(next);
+    }
+    function updateThemeIcon(theme){
+        const btn = document.getElementById('theme-btn');
+        if(!btn) return;
+        btn.innerHTML = theme === 'dark'
+            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+            : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    }
+    updateThemeIcon(document.documentElement.getAttribute('data-theme') || 'dark');
+
+    /* ── NAVIGATION ──────────────────────────────────────── */
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const section = item.dataset.section;
+            navigateTo(section);
+        });
+    });
+    function navigateTo(section){
+        currentSection = section;
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.section === section));
+        document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(`panel-${section}`).classList.add('active');
+        const titles = {repos:'Repositories', settings:'Settings', history:'Commit History'};
+        document.getElementById('topbar-title').textContent = titles[section] || section;
+        if(section === 'history') loadHistory();
+    }
+
+    /* ── TOAST ───────────────────────────────────────────── */
+    function toast(msg, type='info', duration=3500){
+        const tc = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        const icons = {
+            success:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+            error:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+            info:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+        };
+        t.innerHTML = `${icons[type]||icons.info} <span>${msg}</span>`;
+        tc.appendChild(t);
+        const remove = () => {
+            t.classList.add('removing');
+            t.addEventListener('animationend', () => t.remove(), {once:true});
+        };
+        const timer = setTimeout(remove, duration);
+        t.addEventListener('click', () => { clearTimeout(timer); remove(); });
+    }
+
+    /* ── TIMER ───────────────────────────────────────────── */
+    async function toggleTimer(){
+        const btn = document.getElementById('btn-start-stop');
+        if(timerRunning){
+            try { await invoke('stop_auto_commit'); setTimerState(false); toast('Timer stopped','info'); }
+            catch(e){ toast('Failed to stop timer: '+e,'error'); }
+        } else {
+            try { await invoke('start_auto_commit'); setTimerState(true); toast('Timer started','success'); }
+            catch(e){ toast('Failed to start timer: '+e,'error'); }
+        }
+    }
+    function setTimerState(running){
+        timerRunning = running;
+        const dot = document.getElementById('timer-dot');
+        const txt = document.getElementById('timer-status-text');
+        const btn = document.getElementById('btn-start-stop');
+        dot.classList.toggle('running', running);
+        txt.textContent = running ? 'Running' : 'Stopped';
+        btn.innerHTML = running
+            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
+            : '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start';
+    }
+
+    /* ── EVENTS FROM BACKEND ─────────────────────────────── */
+    listen('commit-status', ev => {
+        const r = ev.payload;
+        const tag = r.used_llm ? '🤖' : '⚙️';
+        toast(`${tag} ${r.message}`, 'success', 5000);
+        loadRepos();
+        if(currentSection==='history') loadHistory();
+    });
+    listen('commit-error', ev => {
+        toast('Commit error: '+ev.payload, 'error', 6000);
+    });
+
+    /* ── REPOS ───────────────────────────────────────────── */
+    async function loadRepos(){
+        try {
+            repos = await invoke('get_repos') ?? [];
+            renderRepos();
+        } catch(e){ console.error(e); }
+    }
+    function renderRepos(){
+        const grid = document.getElementById('repos-grid');
+        const empty = document.getElementById('repos-empty');
+        const sub = document.getElementById('repos-count-sub');
+        if(!repos.length){
+            grid.innerHTML = '';
+            grid.appendChild(empty);
+            empty.style.display='';
+            sub.textContent='No repositories configured';
+            return;
+        }
+        empty.style.display='none';
+        sub.textContent = `${repos.length} repositor${repos.length===1?'y':'ies'} configured`;
+        grid.innerHTML = repos.map(repo => {
+            const dirParts = repo.path.replace(/\\/g,'/').split('/');
+            const repoName = dirParts.pop();
+            const dirPath = dirParts.join('/');
+            return `
+    <div class="repo-card" id="repo-card-${repo.id}">
+      <div class="repo-card-header">
+        <div class="repo-path">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--color-text-faint)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <div><span class="repo-path-dir">${dirPath}/</span><span class="repo-path-name">${repoName}</span></div>
+        </div>
+        <div class="repo-actions">
+          <label class="repo-toggle" title="${repo.enabled?'Enabled':'Paused'}">
+            <input type="checkbox" ${repo.enabled?'checked':''} onchange="toggleRepo('${repo.id}', this.checked)" />
+            <span class="repo-toggle-slider"></span>
+          </label>
+          <div class="dropdown" id="dd-${repo.id}">
+            <button class="btn btn-ghost btn-icon" onclick="toggleDropdown('${repo.id}')" title="More options">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+            </button>
+            <div class="dropdown-menu" id="ddm-${repo.id}">
+              <div class="dropdown-item" onclick="openEditRepoModal('${repo.id}');closeDropdown('${repo.id}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Edit
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item danger" onclick="deleteRepo('${repo.id}');closeDropdown('${repo.id}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                Remove
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="repo-meta">
+        <div class="repo-meta-item" id="branch-${repo.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          <span>—</span>
+        </div>
+        <div class="repo-meta-item">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Every ${repo.interval_minutes}m
+        </div>
+${repo.push_enabled ? `<div class="repo-meta-item"><svg width="12" height="12" viewBox="0 0 24 0 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>${(repo.push_remote || 'origin')}/${(repo.push_branch || 'main')}</div>` : ''}        ${repo.last_commit_time ? `<div class="repo-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Last: ${formatRelTime(repo.last_commit_time)}</div>` : ''}
+        <span class="badge ${repo.enabled?'badge-running':'badge-paused'}">${repo.enabled?'●&nbsp;Running':'◌&nbsp;Paused'}</span>
+      </div>
+
+      <div class="repo-card-actions">
+        <button class="btn btn-primary btn-sm" onclick="commitNow('${repo.id}','${repo.path}')" id="commit-btn-${repo.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Commit now
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="openDryRun('${repo.path}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Dry run
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="previewDiff('${repo.path}', 'diff-${repo.id}')" title="Check diff">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Diff
+        </button>
+        <div class="diff-info" id="diff-${repo.id}"></div>
+      </div>
+    </div>`;
+        }).join('');
+
+        // Load branches async
+        repos.forEach(r => loadBranchForRepo(r));
+    }
+    async function loadBranchForRepo(repo){
+        try {
+            const branch = await invoke('get_current_branch', {path: repo.path});
+            const el = document.querySelector(`#branch-${repo.id} span`);
+            if(el) el.textContent = branch || '—';
+        } catch(e){}
+    }
+    async function previewDiff(path, targetId){
+        try {
+            const stats = await invoke('get_diff_preview', {path});
+            const el = document.getElementById(targetId);
+            if(!el) return;
+            if(!stats || stats.files_changed === 0){
+                el.innerHTML = '<span style="color:var(--color-text-faint);font-size:var(--text-xs)">No changes</span>';
+                return;
+            }
+            el.innerHTML = `
+      <span class="diff-files">${stats.files_changed} file${stats.files_changed!==1?'s':''}</span>
+      <span class="diff-add">+${stats.insertions}</span>
+      <span class="diff-del">-${stats.deletions}</span>
+      <span class="diff-files" style="color:var(--color-text-faint)">${stats.estimated_tokens} est. tokens</span>`;
+        } catch(e){}
+    }
+    async function toggleRepo(id, enabled){
+        const repo = repos.find(r=>r.id===id);
+        if(!repo) return;
+        repo.enabled = enabled;
+        try {
+            await invoke('update_repo', {repo});
+            toast(`Repository ${enabled?'enabled':'paused'}`, 'info');
+            loadRepos();
+        } catch(e){ toast('Failed to update: '+e,'error'); }
+    }
+    async function deleteRepo(id){
+        if(!confirm('Remove this repository from AutoCommit? (Git history is not affected)')) return;
+        try {
+            await invoke('remove_repo', {id});
+            toast('Repository removed','info');
+            loadRepos();
+        } catch(e){ toast('Failed to remove: '+e,'error'); }
+    }
+    async function commitNow(id, path){
+        const btn = document.getElementById(`commit-btn-${id}`);
+        if(!btn) return;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spin"></span> Committing…';
+        try {
+            const result = await invoke('run_commit', {path});
+            if(result.message === 'No changes to commit'){
+                toast('No changes to commit','info');
+            } else if(result.message.startsWith('Cooldown')){
+                toast(result.message,'info');
+            } else {
+                toast(`Committed: ${result.message}`, 'success', 5000);
+                loadRepos();
+            }
+        } catch(e){ toast('Commit failed: '+e,'error'); }
+        finally {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Commit now';
+        }
+    }
+
+    /* ── DROPDOWN HELPERS ────────────────────────────────── */
+    function toggleDropdown(id){
+        const menu = document.getElementById(`ddm-${id}`);
+        const isOpen = menu.classList.contains('open');
+        document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+        if(!isOpen) menu.classList.add('open');
+    }
+    function closeDropdown(id){ document.getElementById(`ddm-${id}`)?.classList.remove('open'); }
+    document.addEventListener('click', e => {
+        if(!e.target.closest('.dropdown')) document.querySelectorAll('.dropdown-menu.open').forEach(m=>m.classList.remove('open'));
+    });
+
+    /* ── ADD / EDIT REPO MODAL ───────────────────────────── */
+    function openAddRepoModal(){
+        editingRepoId = null;
+        document.getElementById('modal-repo-title').textContent = 'Add repository';
+        document.getElementById('btn-save-repo').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add repository';
+        document.getElementById('repo-edit-id').value = '';
+        document.getElementById('repo-path').value = '';
+        document.getElementById('repo-path-hint').textContent = '';
+        document.getElementById('repo-path-hint').className = 'form-hint';
+        document.getElementById('repo-interval').value = document.getElementById('cfg-interval')?.value || 30;
+        document.getElementById('repo-cooldown').value = 5;
+        document.getElementById('repo-prefix').value = '';
+        document.getElementById('repo-push-enabled').checked = true;
+        document.getElementById('repo-push-remote').value = 'origin';
+        document.getElementById('repo-push-branch').value = 'main';
+        document.getElementById('repo-preview').style.display = 'none';
+        document.getElementById('push-branch-group').style.display = '';
+        document.getElementById('modal-repo').classList.add('open');
+    }
+    function openEditRepoModal(id){
+        const repo = repos.find(r=>r.id===id);
+        if(!repo) return;
+        editingRepoId = id;
+        document.getElementById('modal-repo-title').textContent = 'Edit repository';
+        document.getElementById('btn-save-repo').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save changes';
+        document.getElementById('repo-edit-id').value = id;
+        document.getElementById('repo-path').value = repo.path;
+        document.getElementById('repo-interval').value = repo.interval_minutes;
+        document.getElementById('repo-cooldown').value = repo.cooldown_minutes;
+        document.getElementById('repo-prefix').value = repo.commit_prefix || '';
+        document.getElementById('repo-push-enabled').checked = repo.push_enabled;
+        document.getElementById('repo-push-remote').value = repo.push_remote || 'origin';
+        document.getElementById('repo-push-branch').value = repo.push_branch || 'main';
+        document.getElementById('push-branch-group').style.display = repo.push_enabled ? '' : 'none';
+        document.getElementById('repo-path-hint').textContent = '';
+        document.getElementById('repo-path-hint').className = 'form-hint';
+        document.getElementById('repo-preview').style.display = 'none';
+        document.getElementById('modal-repo').classList.add('open');
+        validateRepoPath(repo.path);
+        loadBranchOptions(repo.path);
+    }
+    function closeRepoModal(){ document.getElementById('modal-repo').classList.remove('open'); }
+
+    async function pickDirectory(){
+        try {
+            const path = await invoke('select_directory');
+            if(!path) return;
+            document.getElementById('repo-path').value = path;
+            validateRepoPath(path);
+            loadBranchOptions(path);
+            previewRepoDiff(path);
+        } catch(e){}
+    }
+    async function validateRepoPath(path){
+        const hint = document.getElementById('repo-path-hint');
+        if(!path){ hint.textContent=''; return; }
+        try {
+            const valid = await invoke('validate_repo_path', {path});
+            hint.textContent = valid ? '✓ Valid Git repository' : '✗ No .git folder found';
+            hint.className = 'form-hint ' + (valid?'success':'error');
+        } catch(e){}
+    }
+    async function loadBranchOptions(path){
+        try {
+            const branches = await invoke('list_remote_branches', {path});
+            const select = document.getElementById('repo-push-branch-select');
+            const input = document.getElementById('repo-push-branch');
+            if(branches && branches.length){
+                select.innerHTML = branches.map(b=>`<option value="${b}">${b}</option>`).join('');
+                select.value = input.value || branches[0];
+                select.style.display = '';
+                input.style.display = 'none';
+                document.getElementById('push-branch-hint').textContent = `${branches.length} remote branch${branches.length!==1?'es':''} found`;
+            }
+        } catch(e){}
+    }
+    async function previewRepoDiff(path){
+        const preview = document.getElementById('repo-preview');
+        const box = document.getElementById('repo-diff-preview');
+        try {
+            preview.style.display = '';
+            box.textContent = 'Checking diff…';
+            const stats = await invoke('get_diff_preview', {path});
+            if(stats && stats.files_changed > 0){
+                box.innerHTML = `<span class="diff-files">${stats.files_changed} file${stats.files_changed!==1?'s':''} changed</span>&nbsp;&nbsp;<span class="diff-add">+${stats.insertions}</span>&nbsp;<span class="diff-del">-${stats.deletions}</span>&nbsp;&nbsp;<span class="diff-files" style="color:var(--color-text-faint)">~${stats.estimated_tokens} tokens</span>`;
+            } else {
+                box.textContent = 'No uncommitted changes';
+                box.style.color = 'var(--color-text-muted)';
+            }
+        } catch(e){ preview.style.display='none'; }
+    }
+    function togglePushBranch(){
+        const checked = document.getElementById('repo-push-enabled').checked;
+        document.getElementById('push-branch-group').style.display = checked ? '' : 'none';
+    }
+    async function saveRepo(){
+        const path = document.getElementById('repo-path').value.trim();
+        if(!path){ toast('Please select a repository path','error'); return; }
+
+        const interval = parseInt(document.getElementById('repo-interval').value) || 30;
+        const cooldown = parseInt(document.getElementById('repo-cooldown').value) || 0;
+        const prefix = document.getElementById('repo-prefix').value.trim();
+        const pushEnabled = document.getElementById('repo-push-enabled').checked;
+        const pushRemote = document.getElementById('repo-push-remote').value.trim() || 'origin';
+        const pushBranch = document.getElementById('repo-push-branch').value.trim() || 'main';
+
+        const repoObj = {
+            id: editingRepoId || crypto.randomUUID(),
+            path,
+            interval_minutes: interval,
+            enabled: true,
+            push_enabled: pushEnabled,
+            push_remote: pushRemote,
+            push_branch: pushBranch,
+            commit_prefix: prefix,
+            last_commit_time: 0,
+            cooldown_minutes: cooldown,
+        };
+
+        try {
+            if(editingRepoId){
+                repoObj.enabled = repos.find(r => r.id === editingRepoId)?.enabled ?? true;
+                repoObj.last_commit_time = repos.find(r => r.id === editingRepoId)?.last_commit_time ?? 0;
+                await invoke('update_repo', { repo: repoObj });
+                toast('Repository updated','success');
+            } else {
+                await invoke('add_repo', { repo: repoObj });
+                toast('Repository added','success');
+            }
+
+            closeRepoModal();
+            loadRepos();
+        } catch(e){
+            toast('Failed to save: ' + e, 'error');
+        }
+    }
+
+    /* ── DRY RUN MODAL ───────────────────────────────────── */
+    let dryRunPath = '';
+    function openDryRun(path){
+        dryRunPath = path;
+        document.getElementById('dryrun-result').innerHTML = '<span class="spin"></span>';
+        document.getElementById('dryrun-diff').style.display = 'none';
+        document.getElementById('btn-commit-from-dry').onclick = () => { closeDryRunModal(); commitNowByPath(path); };
+        document.getElementById('modal-dryrun').classList.add('open');
+        runDryRun(path);
+    }
+    async function runDryRun(path){
+        try {
+            const r = await invoke('dry_run_commit', {path});
+            document.getElementById('dryrun-result').textContent = r.message || '(empty)';
+            if(r.diff_stats && r.diff_stats.files_changed > 0){
+                const d = r.diff_stats;
+                document.getElementById('dryrun-diff').style.display = '';
+                document.getElementById('dryrun-diff-info').innerHTML = `
+        <span class="diff-files">${d.files_changed} file${d.files_changed!==1?'s':''}</span>
+        <span class="diff-add">+${d.insertions}</span>
+        <span class="diff-del">-${d.deletions}</span>
+        <span class="diff-files" style="color:var(--color-text-faint)">~${d.estimated_tokens} tokens</span>`;
+            }
+        } catch(e){
+            document.getElementById('dryrun-result').textContent = 'Error: '+e;
+            document.getElementById('dryrun-result').style.color = 'var(--color-error)';
+        }
+    }
+    function closeDryRunModal(){ document.getElementById('modal-dryrun').classList.remove('open'); }
+    async function commitNowByPath(path){
+        try {
+            const result = await invoke('run_commit', {path});
+            if(result.message === 'No changes to commit') toast('No changes to commit','info');
+            else if(result.message.startsWith('Cooldown')) toast(result.message,'info');
+            else { toast(`Committed: ${result.message}`,'success',5000); loadRepos(); }
+        } catch(e){ toast('Commit failed: '+e,'error'); }
+    }
+
+    /* ── SETTINGS ─────────────────────────────────────────── */
+    async function loadSettings(){
+        try {
+            const cfg = await invoke('get_config');
+            if(!cfg) return;
+            document.getElementById('cfg-provider').value = cfg.provider || 'lm_studio';
+            document.getElementById('cfg-base-url').value = cfg.llm_base_url || '';
+            document.getElementById('cfg-model').value = cfg.llm_model_name || '';
+            document.getElementById('cfg-interval').value = cfg.interval_minutes || 30;
+            document.getElementById('cfg-auto-start').checked = cfg.auto_start || false;
+            document.getElementById('cfg-threshold').value = cfg.smart_threshold_lines || 10;
+            setSmartMode(cfg.smart_mode || 'smart');
+            // Masked API key
+            const masked = await invoke('get_masked_api_key');
+            if(masked && masked !== '****') document.getElementById('cfg-api-key').placeholder = masked;
+        } catch(e){}
+    }
+    async function onProviderChange(){
+        const provider = document.getElementById('cfg-provider').value;
+        try {
+            const [baseUrl, model] = await invoke('get_provider_defaults', {provider}) || [];
+            if(baseUrl) document.getElementById('cfg-base-url').value = baseUrl;
+            if(model) document.getElementById('cfg-model').value = model;
+            document.getElementById('cfg-api-key').value = '';
+            document.getElementById('cfg-api-key').placeholder = 'sk-...';
+        } catch(e){}
+    }
+    function setSmartMode(mode){
+        smartMode = mode;
+        document.querySelectorAll('.segment-btn').forEach(b => b.classList.toggle('active', b.dataset.val === mode));
+        const hints = {
+            always:'LLM used for every commit regardless of diff size',
+            smart:'LLM only when diff is significant (recommended)',
+            never:'Always use heuristic messages, no LLM calls'
+        };
+        document.getElementById('smart-mode-hint').textContent = hints[mode]||'';
+        document.getElementById('threshold-group').style.display = mode==='smart' ? '' : 'none';
+    }
+    function toggleApiKeyVisibility(){
+        const input = document.getElementById('cfg-api-key');
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+    async function testConnection(){
+        const btn = document.getElementById('btn-test');
+        const resultEl = document.getElementById('test-result');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spin"></span>';
+        resultEl.style.display = 'none';
+        try {
+            const provider = document.getElementById('cfg-provider').value;
+            const base_url = document.getElementById('cfg-base-url').value;
+            const model = document.getElementById('cfg-model').value;
+            const api_key = document.getElementById('cfg-api-key').value;
+            const msg = await invoke('test_connection', {provider, base_url, model, api_key});
+            resultEl.style.display = '';
+            resultEl.innerHTML = `<span class="test-status ok">${msg}</span>`;
+            toast('Connection successful!','success');
+        } catch(e){
+            resultEl.style.display = '';
+            resultEl.innerHTML = `<span class="test-status fail">Failed: ${e}</span>`;
+            toast('Connection failed: '+e,'error');
+        }
+        btn.disabled = false;
+        btn.textContent = 'Test';
+    }
+    async function saveSettings(){
+        try {
+            const cfg = await invoke('get_config') || {};
+            cfg.provider = document.getElementById('cfg-provider').value;
+            cfg.llm_base_url = document.getElementById('cfg-base-url').value;
+            cfg.llm_model_name = document.getElementById('cfg-model').value;
+            const rawKey = document.getElementById('cfg-api-key').value;
+            if(rawKey) cfg.llm_api_key = rawKey;
+            cfg.interval_minutes = parseInt(document.getElementById('cfg-interval').value)||30;
+            cfg.auto_start = document.getElementById('cfg-auto-start').checked;
+            cfg.smart_mode = smartMode;
+            cfg.smart_threshold_lines = parseInt(document.getElementById('cfg-threshold').value)||10;
+            await invoke('save_config', {config: cfg});
+            toast('Settings saved','success');
+            if(rawKey) document.getElementById('cfg-api-key').value = '';
+        } catch(e){ toast('Failed to save settings: '+e,'error'); }
+    }
+
+    /* ── HISTORY ─────────────────────────────────────────── */
+    async function loadHistory(){
+        try {
+            history = await invoke('get_commit_history') ?? [];
+            updateHistoryStats();
+            updateHistoryRepoFilter();
+            renderHistory();
+        } catch(e){}
+    }
+    function updateHistoryStats(){
+        const ai = history.filter(h=>h.used_llm).length;
+        const tokens = history.reduce((s,h)=>s+(h.estimated_tokens||0),0);
+        animateNum('stat-total', history.length);
+        animateNum('stat-ai', ai);
+        animateNum('stat-heuristic', history.length - ai);
+        animateNum('stat-tokens', tokens);
+    }
+    function animateNum(id, target){
+        const el = document.getElementById(id);
+        if(!el) return;
+        const cur = parseInt(el.textContent.replace(/,/g,''))||0;
+        if(cur === target){ el.textContent = target.toLocaleString(); return; }
+        let start = cur, step = Math.ceil(Math.abs(target-cur)/20);
+        const tick = () => {
+            start += start < target ? Math.min(step, target-start) : -Math.min(step, start-target);
+            el.textContent = start.toLocaleString();
+            if(start !== target) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+    function updateHistoryRepoFilter(){
+        const sel = document.getElementById('history-filter-repo');
+        const cur = sel.value;
+        const repos = [...new Set(history.map(h=>h.repo_path))];
+        sel.innerHTML = '<option value="">All repositories</option>' +
+            repos.map(r => { const n = r.replace(/\\/g,'/').split('/').pop(); return `<option value="${r}"${r===cur?' selected':''}>${n}</option>`; }).join('');
+    }
+    function renderHistory(){
+        const list = document.getElementById('history-list');
+        const empty = document.getElementById('history-empty');
+        const filterRepo = document.getElementById('history-filter-repo').value;
+        const filterType = document.getElementById('history-filter-type').value;
+        let items = history;
+        if(filterRepo) items = items.filter(h=>h.repo_path===filterRepo);
+        if(filterType==='ai') items = items.filter(h=>h.used_llm);
+        if(filterType==='heuristic') items = items.filter(h=>!h.used_llm);
+        if(!items.length){
+            list.innerHTML = '';
+            list.appendChild(empty);
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+        list.innerHTML = items.map(h => {
+            const d = new Date(h.timestamp * 1000);
+            const repoName = h.repo_path.replace(/\\/g,'/').split('/').pop();
+            return `
+    <div class="history-item">
+      <div class="history-item-header">
+        <span class="history-msg">${escHtml(h.message)}</span>
+        <span class="badge ${h.used_llm?'badge-ai':'badge-heuristic'}">${h.used_llm?'AI':'Heuristic'}</span>
+      </div>
+      <div class="history-meta">
+        <div class="history-meta-item">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          ${escHtml(repoName)}
+        </div>
+        <div class="history-meta-item">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
+        </div>
+        ${h.files_changed ? `<div class="history-meta-item diff-files">${h.files_changed}f <span class="diff-add">+${h.insertions}</span> <span class="diff-del">-${h.deletions}</span></div>` : ''}
+        ${h.estimated_tokens ? `<div class="history-meta-item" style="color:var(--color-text-faint)">~${h.estimated_tokens} tokens</div>` : ''}
+      </div>
+    </div>`;
+        }).join('');
+    }
+    async function exportCSV(){
+        try {
+            const csv = await invoke('export_history_csv');
+            downloadText(csv, 'autocommit-history.csv', 'text/csv');
+            toast('CSV exported','success');
+        } catch(e){ toast('Export failed: '+e,'error'); }
+    }
+    function exportJSON(){
+        try {
+            const json = JSON.stringify(history, null, 2);
+            downloadText(json, 'autocommit-history.json', 'application/json');
+            toast('JSON exported','success');
+        } catch(e){ toast('Export failed: '+e,'error'); }
+    }
+    async function clearHistory(){
+        if(!confirm('Clear all commit history? This cannot be undone.')) return;
+        try {
+            await invoke('clear_commit_history');
+            history = [];
+            updateHistoryStats();
+            renderHistory();
+            toast('History cleared','info');
+        } catch(e){ toast('Failed to clear: '+e,'error'); }
+    }
+    function downloadText(text, filename, mime){
+        const blob = new Blob([text], {type: mime});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    /* ── UTILS ────────────────────────────────────────────── */
+    function escHtml(s){ const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+    function formatRelTime(ts){
+        const diff = Math.floor((Date.now()/1000) - ts);
+        if(diff < 60) return diff+'s ago';
+        if(diff < 3600) return Math.floor(diff/60)+'m ago';
+        if(diff < 86400) return Math.floor(diff/3600)+'h ago';
+        return Math.floor(diff/86400)+'d ago';
+    }
+
+    /* ── INIT ─────────────────────────────────────────────── */
+    async function init(){
+        try {
+            await invoke('load_config_from_file');
+            await loadSettings();
+            await loadRepos();
+            if(document.getElementById('cfg-auto-start')?.checked) await toggleTimer().catch(()=>{});
+        } catch(e){ console.error('Init error',e); }
+    }
+    init();
+</script>
+</body>
+</html>

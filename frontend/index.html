@@ -3,1145 +3,381 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Auto Commit</title>
-    <link rel="icon" type="image/x-icon" href="icons/icon.ico" />
-    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
-    <style>
-        /* ─── TOKENS ─────────────────────────────────────────────── */
-        :root,[data-theme="light"]{
-            --bg:#f7f6f2;--surface:#f9f8f5;--surface2:#fbfbf9;--surface-off:#f3f0ec;
-            --divider:#dcd9d5;--border:#d4d1ca;
-            --text:#28251d;--muted:#7a7974;--faint:#bab9b4;--inverse:#f9f8f4;
-            --primary:#01696f;--primary-h:#0c4e54;--primary-hi:#cedcd8;
-            --success:#437a22;--success-h:#2e5c10;--success-hi:#d4dfcc;
-            --error:#a12c7b;--error-h:#7d1e5e;--error-hi:#e0ced7;
-            --warning:#964219;--warning-hi:#ddcfc6;
-            --orange:#da7101;--gold:#d19900;
-            --r-sm:.375rem;--r-md:.5rem;--r-lg:.75rem;--r-xl:1rem;--r-full:9999px;
-            --tr:180ms cubic-bezier(.16,1,.3,1);
-            --sh-sm:0 1px 2px oklch(.2 .01 80/.06);
-            --sh-md:0 4px 12px oklch(.2 .01 80/.08);
-            --sh-lg:0 12px 32px oklch(.2 .01 80/.12);
-            --font:'Satoshi',system-ui,sans-serif;
-            --xs:.75rem;--sm:.875rem;--base:1rem;--lg:1.125rem;--xl:1.25rem;
-        }
-        [data-theme="dark"]{
-            --bg:#171614;--surface:#1c1b19;--surface2:#201f1d;--surface-off:#1d1c1a;
-            --divider:#262523;--border:#393836;
-            --text:#cdccca;--muted:#797876;--faint:#5a5957;--inverse:#2b2a28;
-            --primary:#4f98a3;--primary-h:#227f8b;--primary-hi:#313b3b;
-            --success:#6daa45;--success-h:#4d8f25;--success-hi:#3a4435;
-            --error:#d163a7;--error-h:#b9478f;--error-hi:#4c3d46;
-            --warning:#bb653b;--warning-hi:#564942;
-            --orange:#fdab43;--gold:#e8af34;
-            --sh-sm:0 1px 2px #0003;--sh-md:0 4px 12px #0004;--sh-lg:0 12px 32px #0006;
-        }
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
-        body{font-family:var(--font);font-size:var(--base);color:var(--text);
-            background:var(--bg);min-height:100dvh;line-height:1.6;overflow:hidden}
-        input,button,select,textarea{font:inherit;color:inherit}
-        button{cursor:pointer;background:none;border:none}
-        a,button,[role="button"],input,select,textarea{
-            transition:color var(--tr),background var(--tr),border-color var(--tr),box-shadow var(--tr)}
-        :focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:var(--r-sm)}
-        ::selection{background:color-mix(in oklch,var(--primary) 25%,transparent)}
-
-        /* ─── LAYOUT ─────────────────────────────────────────────── */
-        #app{display:flex;height:100dvh}
-        .sidebar{width:220px;flex-shrink:0;background:var(--surface);
-            border-right:1px solid var(--divider);display:flex;flex-direction:column;
-            padding:0;overflow:hidden}
-        .sidebar-logo{display:flex;align-items:center;gap:.625rem;padding:1rem 1.25rem .75rem;
-            border-bottom:1px solid var(--divider)}
-        .sidebar-logo img{width:28px;height:28px;object-fit:contain}
-        .sidebar-logo span{font-weight:700;font-size:var(--lg);letter-spacing:-.02em;color:var(--text)}
-        .nav{flex:1;padding:.5rem .75rem;display:flex;flex-direction:column;gap:.125rem;overflow-y:auto}
-        .nav-item{display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;
-            border-radius:var(--r-md);font-size:var(--sm);font-weight:500;
-            color:var(--muted);cursor:pointer;transition:background var(--tr),color var(--tr)}
-        .nav-item:hover{background:var(--surface-off);color:var(--text)}
-        .nav-item.active{background:var(--primary-hi);color:var(--primary)}
-        .nav-item svg{width:16px;height:16px;flex-shrink:0}
-        .nav-section{font-size:var(--xs);font-weight:600;color:var(--faint);
-            text-transform:uppercase;letter-spacing:.06em;padding:.75rem .75rem .25rem;margin-top:.25rem}
-        .sidebar-footer{padding:.75rem;border-top:1px solid var(--divider)}
-        .theme-btn{width:100%;display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
-            border-radius:var(--r-md);font-size:var(--sm);color:var(--muted)}
-        .theme-btn:hover{background:var(--surface-off);color:var(--text)}
-
-        .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-        .topbar{height:52px;flex-shrink:0;background:var(--surface);
-            border-bottom:1px solid var(--divider);
-            display:flex;align-items:center;justify-content:space-between;
-            padding:0 1.5rem;gap:1rem}
-        .topbar-left{display:flex;align-items:center;gap:.75rem}
-        .page-title{font-size:var(--lg);font-weight:700;letter-spacing:-.02em}
-        .topbar-right{display:flex;align-items:center;gap:.5rem}
-        .content{flex:1;overflow-y:auto;padding:1.5rem}
-
-        /* ─── PANELS ─────────────────────────────────────────────── */
-        .panel{display:none}
-        .panel.active{display:block}
-
-        /* ─── CARDS ──────────────────────────────────────────────── */
-        .card{background:var(--surface);border:1px solid var(--divider);
-            border-radius:var(--r-lg);padding:1.25rem;box-shadow:var(--sh-sm)}
-        .card+.card{margin-top:1rem}
-        .card-title{font-size:var(--base);font-weight:600;margin-bottom:.75rem;
-            display:flex;align-items:center;gap:.5rem}
-        .card-title svg{width:16px;height:16px;color:var(--primary)}
-        .card-subtitle{font-size:var(--sm);color:var(--muted);margin-bottom:1rem}
-
-        /* ─── FORM ───────────────────────────────────────────────── */
-        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-        .form-group{display:flex;flex-direction:column;gap:.375rem;margin-bottom:.75rem}
-        label{font-size:var(--sm);font-weight:500;color:var(--muted)}
-        .input{background:var(--surface2);border:1px solid var(--border);
-            border-radius:var(--r-md);padding:.5rem .75rem;font-size:var(--sm);
-            color:var(--text);width:100%;outline:none;transition:border-color var(--tr),box-shadow var(--tr)}
-        .input:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklch,var(--primary) 18%,transparent)}
-        .input:disabled{opacity:.5;cursor:not-allowed}
-        select.input{cursor:pointer}
-        .input-row{display:flex;gap:.5rem}
-        .input-row .input{flex:1}
-
-        .input-masked{font-family:monospace;letter-spacing:.05em}
-
-        /* ─── BUTTONS ────────────────────────────────────────────── */
-        .btn{display:inline-flex;align-items:center;gap:.375rem;padding:.5rem 1rem;
-            border-radius:var(--r-md);font-size:var(--sm);font-weight:500;
-            cursor:pointer;transition:background var(--tr),color var(--tr),box-shadow var(--tr)}
-        .btn-primary{background:var(--primary);color:#fff}
-        .btn-primary:hover{background:var(--primary-h)}
-        .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
-        .btn-ghost:hover{background:var(--surface-off);color:var(--text)}
-        .btn-danger{background:var(--error);color:#fff}
-        .btn-danger:hover{background:var(--error-h)}
-        .btn-success{background:var(--success);color:#fff}
-        .btn-success:hover{background:var(--success-h)}
-        .btn-sm{padding:.375rem .625rem;font-size:var(--xs)}
-        .btn-icon{padding:.4375rem;border-radius:var(--r-md)}
-        .btn svg{width:14px;height:14px}
-        .btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
-
-        /* ─── TOGGLE ─────────────────────────────────────────────── */
-        .toggle-wrap{display:flex;align-items:center;justify-content:space-between;
-            padding:.625rem 0;border-bottom:1px solid var(--divider)}
-        .toggle-wrap:last-child{border-bottom:none}
-        .toggle-info{display:flex;flex-direction:column;gap:.125rem}
-        .toggle-label{font-size:var(--sm);font-weight:500}
-        .toggle-desc{font-size:var(--xs);color:var(--muted)}
-        .toggle{position:relative;width:40px;height:22px;flex-shrink:0}
-        .toggle input{opacity:0;width:0;height:0}
-        .toggle-track{position:absolute;inset:0;background:var(--border);
-            border-radius:var(--r-full);cursor:pointer;transition:background var(--tr)}
-        .toggle input:checked~.toggle-track{background:var(--primary)}
-        .toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;
-            background:#fff;border-radius:50%;transition:transform var(--tr);pointer-events:none}
-        .toggle input:checked~.toggle-track .toggle-thumb{transform:translateX(18px)}
-
-        /* ─── STATUS BADGE ───────────────────────────────────────── */
-        .badge{display:inline-flex;align-items:center;gap:.25rem;
-            padding:.125rem .5rem;border-radius:var(--r-full);font-size:var(--xs);font-weight:600}
-        .badge-green{background:var(--success-hi);color:var(--success)}
-        .badge-red{background:var(--error-hi);color:var(--error)}
-        .badge-yellow{background:color-mix(in oklch,var(--gold) 20%,var(--bg));color:var(--gold)}
-        .badge-blue{background:var(--primary-hi);color:var(--primary)}
-        .badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-
-        /* ─── COMMIT LOG ─────────────────────────────────────────── */
-        .commit-list{display:flex;flex-direction:column;gap:.5rem;max-height:420px;overflow-y:auto}
-        .commit-item{background:var(--surface2);border:1px solid var(--divider);
-            border-radius:var(--r-md);padding:.75rem 1rem;
-            display:grid;grid-template-columns:1fr auto;gap:.25rem .75rem;align-items:start}
-        .commit-msg{font-size:var(--sm);font-weight:500;grid-column:1}
-        .commit-meta{font-size:var(--xs);color:var(--muted);grid-column:1;
-            display:flex;gap:.75rem;flex-wrap:wrap}
-        .commit-badges{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;
-            gap:.25rem;align-items:flex-end}
-
-        /* ─── STATS GRID ─────────────────────────────────────────── */
-        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.25rem}
-        .stat-card{background:var(--surface);border:1px solid var(--divider);
-            border-radius:var(--r-lg);padding:1rem;text-align:center}
-        .stat-val{font-size:1.5rem;font-weight:700;color:var(--primary);line-height:1.2;
-            font-variant-numeric:tabular-nums}
-        .stat-label{font-size:var(--xs);color:var(--muted);margin-top:.25rem}
-
-        /* ─── REPO LIST ──────────────────────────────────────────── */
-        .repo-list{display:flex;flex-direction:column;gap:.75rem}
-        .repo-item{background:var(--surface);border:1px solid var(--divider);
-            border-radius:var(--r-lg);padding:1rem 1.25rem;
-            display:flex;align-items:center;gap:1rem}
-        .repo-item-info{flex:1;min-width:0}
-        .repo-item-path{font-size:var(--sm);font-weight:500;
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .repo-item-meta{font-size:var(--xs);color:var(--muted);margin-top:.125rem}
-        .repo-item-actions{display:flex;gap:.375rem;flex-shrink:0}
-
-        /* ─── DRY RUN RESULT ─────────────────────────────────────── */
-        .dry-run-box{background:var(--surface2);border:1px solid var(--divider);
-            border-radius:var(--r-md);padding:.875rem 1rem;font-size:var(--sm);
-            font-family:monospace;margin-top:.75rem;display:none}
-        .dry-run-box.visible{display:block}
-        .dry-run-header{font-size:var(--xs);font-weight:600;color:var(--gold);
-            text-transform:uppercase;letter-spacing:.06em;margin-bottom:.375rem}
-
-        /* ─── TOKEN COUNTER ──────────────────────────────────────── */
-        .token-hint{font-size:var(--xs);color:var(--muted);display:flex;
-            align-items:center;gap:.25rem;margin-top:.375rem}
-        .token-hint svg{width:12px;height:12px;color:var(--gold)}
-
-        /* ─── TOAST ──────────────────────────────────────────────── */
-        #toast-container{position:fixed;bottom:1.25rem;right:1.25rem;
-            display:flex;flex-direction:column;gap:.5rem;z-index:9999;pointer-events:none}
-        .toast{background:var(--surface);border:1px solid var(--divider);
-            border-radius:var(--r-lg);padding:.75rem 1rem;
-            box-shadow:var(--sh-lg);font-size:var(--sm);
-            display:flex;align-items:center;gap:.625rem;min-width:280px;
-            pointer-events:auto;animation:slide-in .25s ease}
-        .toast.error{border-color:var(--error);background:var(--error-hi)}
-        .toast.success{border-color:var(--success);background:var(--success-hi)}
-        .toast-icon{flex-shrink:0}
-        .toast-icon svg{width:16px;height:16px}
-        .toast.success .toast-icon{color:var(--success)}
-        .toast.error .toast-icon{color:var(--error)}
-        @keyframes slide-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-        /* ─── SCROLLBAR ──────────────────────────────────────────── */
-        ::-webkit-scrollbar{width:6px;height:6px}
-        ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--r-full)}
-        ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
-
-        /* ─── MISC ───────────────────────────────────────────────── */
-        .divider{height:1px;background:var(--divider);margin:.75rem 0}
-        .section-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
-        .field-hint{font-size:var(--xs);color:var(--muted);margin-top:.25rem}
-        .validation-msg{font-size:var(--xs);margin-top:.25rem;display:none}
-        .validation-msg.visible{display:block}
-        .validation-msg.ok{color:var(--success)}
-        .validation-msg.err{color:var(--error)}
-        .empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
-        .empty-state svg{width:40px;height:40px;margin:0 auto .75rem;color:var(--faint)}
-        .empty-state p{font-size:var(--sm)}
-        .modal-overlay{position:fixed;inset:0;background:#0008;
-            display:flex;align-items:center;justify-content:center;z-index:1000;display:none}
-        .modal-overlay.open{display:flex}
-        .modal{background:var(--surface);border:1px solid var(--divider);
-            border-radius:var(--r-xl);padding:1.5rem;min-width:420px;max-width:540px;
-            box-shadow:var(--sh-lg)}
-        .modal-title{font-size:var(--lg);font-weight:700;margin-bottom:1.25rem}
-        .modal-actions{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1.25rem}
-    </style>
+    <title>AutoCommit</title>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div id="app">
-
-    <!-- ─── SIDEBAR ──────────────────────────────────────────── -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="icons/icon.ico" alt="Auto Commit logo" width="28" height="28" />
-            <span>AutoCommit</span>
+        <div class="sidebar-brand">
+            <img src="icons/icon.ico" alt="AutoCommit logo" id="brand-logo">
+            <span class="sidebar-brand-name">AutoCommit</span>
         </div>
-        <nav class="nav">
-            <div class="nav-section">Main</div>
-            <div class="nav-item active" data-panel="dashboard" onclick="showPanel('dashboard',this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                Dashboard
-            </div>
-            <div class="nav-item" data-panel="repos" onclick="showPanel('repos',this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18M3 12h18M3 21h18"/></svg>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" data-section="repos">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/></svg>
                 Repositories
             </div>
-            <div class="nav-section">Tools</div>
-            <div class="nav-item" data-panel="settings" onclick="showPanel('settings',this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            <div class="nav-item" data-section="settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
                 Settings
             </div>
-            <div class="nav-item" data-panel="history" onclick="showPanel('history',this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div class="nav-item" data-section="history">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3 8A9 9 0 1 0 5.65 5.65"/><path d="M12 7v5l4 2"/></svg>
                 History
             </div>
         </nav>
         <div class="sidebar-footer">
-            <button class="theme-btn" onclick="toggleTheme()">
-                <svg id="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                <span id="theme-label">Light mode</span>
-            </button>
+            <div class="timer-badge">
+                <div class="timer-dot" id="timer-dot"></div>
+                <span id="timer-status-text">Stopped</span>
+            </div>
+            <div style="display:flex;gap:var(--space-2)">
+                <button class="btn btn-primary btn-sm" style="flex:1" id="btn-start-stop">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Start
+                </button>
+            </div>
         </div>
     </aside>
 
-    <!-- ─── MAIN ──────────────────────────────────────────────── -->
-    <div class="main">
+    <!-- MAIN -->
+    <div class="main-wrap">
         <div class="topbar">
-            <div class="topbar-left">
-                <span class="page-title" id="page-title">Dashboard</span>
-                <span id="timer-badge" class="badge badge-red"><span class="badge-dot"></span>Stopped</span>
-            </div>
-            <div class="topbar-right">
-                <button class="btn btn-success" id="btn-start" onclick="startTimer()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    Start
-                </button>
-                <button class="btn btn-ghost" id="btn-stop" onclick="stopTimer()" disabled>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/></svg>
-                    Stop
+            <span class="topbar-title" id="topbar-title">Repositories</span>
+            <div class="topbar-actions">
+                <button class="theme-toggle" id="theme-btn" aria-label="Toggle theme">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 </button>
             </div>
         </div>
-        <div class="content">
 
-            <!-- ─── DASHBOARD PANEL ──────────────────────────────── -->
-            <div class="panel active" id="panel-dashboard">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-val" id="stat-total">0</div>
-                        <div class="stat-label">Total commits</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-val" id="stat-ai">0</div>
-                        <div class="stat-label">AI-generated</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-val" id="stat-heuristic">0</div>
-                        <div class="stat-label">Heuristic</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-val" id="stat-tokens">0</div>
-                        <div class="stat-label">Tokens saved (est.)</div>
-                    </div>
-                </div>
+        <div class="main-content" id="main-content">
 
-                <div class="card">
-                    <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Quick Commit
-                    </div>
-
-                    <!-- Repo path + validation -->
-                    <div class="form-group">
-                        <label>Repository path</label>
-                        <div class="input-row">
-                            <input type="text" id="repo-path" class="input" placeholder="/home/user/project" oninput="onRepoPathInput()" />
-                            <button class="btn btn-ghost btn-sm" onclick="validateRepo()">Validate</button>
-                        </div>
-                        <div class="validation-msg" id="repo-validation"></div>
-                    </div>
-
-                    <!-- Branch info -->
-                    <div class="form-group">
-                        <label>Active branch</label>
-                        <div class="input-row">
-                            <input type="text" id="active-branch" class="input" placeholder="(unknown)" readonly style="background:var(--surface-off)" />
-                            <button class="btn btn-ghost btn-sm" onclick="fetchBranch()">Refresh</button>
-                        </div>
-                    </div>
-
-                    <!-- Push toggle + branch -->
-                    <div class="toggle-wrap">
-                        <div class="toggle-info">
-                            <span class="toggle-label">Auto push</span>
-                            <span class="toggle-desc">Push to remote after every commit</span>
-                        </div>
-                        <label class="toggle">
-                            <input type="checkbox" id="push-enabled" checked onchange="onPushToggle()" />
-                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                        </label>
-                    </div>
-
-                    <!-- Push branch (shown when push enabled) -->
-                    <div id="push-branch-row" class="form-group" style="margin-top:.75rem">
-                        <label>Push target</label>
-                        <div class="input-row">
-                            <input type="text" id="push-branch" class="input" value="origin/main" placeholder="origin/main" />
-                            <button class="btn btn-ghost btn-sm" onclick="listBranches()">Browse</button>
-                        </div>
-                    </div>
-
-                    <!-- Commit prefix -->
-                    <div class="form-group" style="margin-top:.5rem">
-                        <label>Commit prefix <span style="color:var(--faint);font-weight:400">(optional)</span></label>
-                        <input type="text" id="commit-prefix" class="input" placeholder="WIP: or feat(ui):" />
-                        <div class="field-hint">Prepended to every generated message</div>
-                    </div>
-
-                    <!-- Cooldown -->
-                    <div class="form-group">
-                        <label>Cooldown between commits (minutes)</label>
-                        <input type="number" id="cooldown-min" class="input" value="5" min="0" max="1440" />
-                        <div class="field-hint">Minimum time between successful commits (0 = disabled)</div>
-                    </div>
-
-                    <!-- Token estimate -->
-                    <div class="token-hint" id="token-hint" style="display:none">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Estimated tokens in current diff: <strong id="token-count">—</strong>
-                    </div>
-
-                    <!-- Dry run result -->
-                    <div class="dry-run-box" id="dry-run-box">
-                        <div class="dry-run-header">🔍 Dry Run Preview</div>
-                        <div id="dry-run-msg"></div>
-                        <div id="dry-run-stats" style="margin-top:.5rem;font-size:.75rem;color:var(--muted)"></div>
-                    </div>
-
-                    <div class="section-actions">
-                        <button class="btn btn-primary" onclick="runCommitNow()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                            Commit now
-                        </button>
-                        <button class="btn btn-ghost" onclick="runDryRun()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            Dry run
-                        </button>
-                        <button class="btn btn-ghost" onclick="previewTokens()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            Token estimate
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Recent commits -->
-                <div class="card" style="margin-top:1rem">
-                    <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                        Recent commits
-                    </div>
-                    <div class="commit-list" id="recent-commits">
-                        <div class="empty-state">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                            <p>No commits yet. Start the timer or commit manually.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ─── REPOSITORIES PANEL ───────────────────────────── -->
-            <div class="panel" id="panel-repos">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <!-- ===== REPOS PANEL ===== -->
+            <div class="section-panel active" id="panel-repos">
+                <div class="section-header">
                     <div>
-                        <div class="page-title">Repositories</div>
-                        <div style="font-size:var(--sm);color:var(--muted);margin-top:.125rem">Manage multiple repos independently</div>
+                        <div class="section-title">Repositories</div>
+                        <div class="section-sub" id="repos-count-sub">No repositories configured</div>
                     </div>
-                    <button class="btn btn-primary" onclick="openAddRepoModal()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <button class="btn btn-primary" id="btn-add-repo">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Add repository
                     </button>
                 </div>
-                <div class="repo-list" id="repo-list">
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18M3 12h18M3 21h18"/></svg>
-                        <p>No repositories added yet.</p>
+                <div class="repos-grid" id="repos-grid">
+                    <div class="empty-state" id="repos-empty">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <h3>No repositories yet</h3>
+                        <p>Add a Git repository to start automating commits with AI-generated messages.</p>
+                        <button class="btn btn-primary" id="btn-add-repo-empty">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Add repository
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- ─── SETTINGS PANEL ───────────────────────────────── -->
-            <div class="panel" id="panel-settings">
-                <div class="card">
-                    <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                        LLM Provider
+            <!-- ===== SETTINGS PANEL ===== -->
+            <div class="section-panel" id="panel-settings">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">Settings</div>
+                        <div class="section-sub">LLM provider, smart mode and timer defaults</div>
                     </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Provider</label>
-                            <select class="input" id="provider" onchange="onProviderChange()">
-                                <optgroup label="Local">
-                                    <option value="lm_studio">LM Studio</option>
-                                    <option value="ollama">Ollama</option>
-                                    <option value="local_ai">LocalAI</option>
-                                    <option value="custom">Custom</option>
-                                </optgroup>
-                                <optgroup label="Cloud">
-                                    <option value="open_ai">OpenAI</option>
-                                    <option value="groq">Groq</option>
-                                    <option value="gemini">Gemini</option>
-                                    <option value="anthropic">Anthropic</option>
-                                    <option value="mistral">Mistral</option>
-                                    <option value="together">Together</option>
-                                    <option value="open_router">OpenRouter</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Model</label>
-                            <input type="text" id="model-name" class="input" placeholder="gpt-4o-mini" />
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Base URL</label>
-                        <input type="text" id="base-url" class="input" placeholder="http://localhost:1234/v1" />
-                    </div>
-
-                    <div class="form-group" id="api-key-group">
-                        <label>API Key</label>
-                        <div class="input-row">
-                            <input type="password" id="api-key" class="input" placeholder="sk-..." autocomplete="off" />
-                            <button class="btn btn-ghost btn-sm" onclick="toggleApiKeyVisibility()" title="Show/hide">
-                                <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </button>
-                        </div>
-                        <div class="field-hint" id="api-key-mask-hint" style="font-family:monospace"></div>
-                    </div>
-
-                    <button class="btn btn-ghost btn-sm" onclick="testConnection()" style="margin-bottom:.75rem">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                        Test connection
-                    </button>
-                    <div class="validation-msg" id="conn-result"></div>
-                </div>
-
-                <div class="card" style="margin-top:1rem">
-                    <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Timer &amp; Commit
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Auto-commit interval (minutes)</label>
-                            <input type="number" id="interval-minutes" class="input" value="30" min="1" />
-                        </div>
-                        <div class="form-group">
-                            <label>Smart mode threshold (lines)</label>
-                            <input type="number" id="smart-threshold" class="input" value="10" min="1" />
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Smart commit mode</label>
-                        <select class="input" id="smart-mode">
-                            <option value="smart">Smart — LLM only on significant changes</option>
-                            <option value="always">Always — always use LLM</option>
-                            <option value="never">Never — heuristic messages only</option>
-                        </select>
-                    </div>
-
-                    <div class="toggle-wrap">
-                        <div class="toggle-info">
-                            <span class="toggle-label">Auto-start on launch</span>
-                            <span class="toggle-desc">Start the timer automatically when the app opens</span>
-                        </div>
-                        <label class="toggle">
-                            <input type="checkbox" id="auto-start" />
-                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="section-actions">
-                    <button class="btn btn-primary" onclick="saveSettings()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <button class="btn btn-primary" id="btn-save-settings">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                         Save settings
                     </button>
                 </div>
+
+                <div class="settings-grid">
+                    <!-- LLM Provider -->
+                    <div class="card" style="grid-column:1/-1">
+                        <div class="settings-section-title">LLM Provider</div>
+                        <div class="form-grid" style="margin-top:var(--space-4)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="cfg-provider">Provider</label>
+                                    <select class="form-select" id="cfg-provider">
+                                        <optgroup label="Local">
+                                            <option value="lm_studio">LM Studio</option>
+                                            <option value="ollama">Ollama</option>
+                                            <option value="local_ai">LocalAI</option>
+                                            <option value="custom">Custom</option>
+                                        </optgroup>
+                                        <optgroup label="Cloud">
+                                            <option value="open_ai">OpenAI</option>
+                                            <option value="groq">Groq</option>
+                                            <option value="gemini">Gemini</option>
+                                            <option value="anthropic">Anthropic</option>
+                                            <option value="mistral">Mistral</option>
+                                            <option value="together">Together AI</option>
+                                            <option value="open_router">OpenRouter</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="cfg-model">Model name</label>
+                                    <input class="form-input" id="cfg-model" type="text" placeholder="e.g. gpt-4o-mini" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="cfg-base-url">Base URL</label>
+                                <input class="form-input" id="cfg-base-url" type="text" placeholder="https://api.openai.com/v1" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="cfg-api-key">API Key</label>
+                                <div class="input-with-btn">
+                                    <input class="form-input" id="cfg-api-key" type="password" placeholder="sk-..." autocomplete="off" />
+                                    <button class="btn btn-secondary btn-sm" id="btn-toggle-apikey" title="Show/hide key" style="flex-shrink:0">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" id="btn-test" style="flex-shrink:0">Test</button>
+                                </div>
+                                <div class="form-hint" id="cfg-api-key-hint">Masked after save. Only required for cloud providers.</div>
+                            </div>
+                            <div id="test-result" style="display:none"></div>
+                        </div>
+                    </div>
+
+                    <!-- Smart mode -->
+                    <div class="card">
+                        <div class="settings-section-title">Smart Mode</div>
+                        <div style="display:flex;flex-direction:column;gap:var(--space-4);margin-top:var(--space-4)">
+                            <div class="form-group">
+                                <label class="form-label">LLM usage strategy</label>
+                                <div class="segment-control" id="smart-mode-ctrl">
+                                    <button class="segment-btn" data-val="always">Always</button>
+                                    <button class="segment-btn active" data-val="smart">Smart</button>
+                                    <button class="segment-btn" data-val="never">Never</button>
+                                </div>
+                                <div class="form-hint" id="smart-mode-hint" style="margin-top:var(--space-2)">LLM only when diff is significant (recommended)</div>
+                            </div>
+                            <div class="form-group" id="threshold-group">
+                                <label class="form-label" for="cfg-threshold">Significance threshold (lines)</label>
+                                <input class="form-input" id="cfg-threshold" type="number" min="1" max="500" value="10" />
+                                <div class="form-hint">Commit is "significant" if total changed lines ≥ this value</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timer defaults -->
+                    <div class="card">
+                        <div class="settings-section-title">Timer Defaults</div>
+                        <div style="display:flex;flex-direction:column;gap:var(--space-4);margin-top:var(--space-4)">
+                            <div class="form-group">
+                                <label class="form-label" for="cfg-interval">Default interval (minutes)</label>
+                                <input class="form-input" id="cfg-interval" type="number" min="1" max="1440" value="30" />
+                                <div class="form-hint">Used as default when adding new repositories</div>
+                            </div>
+                            <div class="toggle-row" style="padding:0">
+                                <div>
+                                    <div class="toggle-row-label">Auto-start on launch</div>
+                                    <div class="toggle-row-sub">Start timer automatically when app opens</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="cfg-auto-start" />
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- ─── HISTORY PANEL ────────────────────────────────── -->
-            <div class="panel" id="panel-history">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <!-- ===== HISTORY PANEL ===== -->
+            <div class="section-panel" id="panel-history">
+                <div class="section-header">
                     <div>
-                        <div class="page-title">Commit History</div>
-                        <div style="font-size:var(--sm);color:var(--muted);margin-top:.125rem">All auto-commits recorded locally</div>
+                        <div class="section-title">Commit History</div>
+                        <div class="section-sub">All auto-commits recorded locally</div>
                     </div>
-                    <div style="display:flex;gap:.5rem">
-                        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Export CSV
+                    <div style="display:flex;gap:var(--space-2)">
+                        <button class="btn btn-secondary btn-sm" id="btn-export-csv">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            CSV
                         </button>
-                        <button class="btn btn-ghost btn-sm" onclick="exportJSON()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Export JSON
+                        <button class="btn btn-secondary btn-sm" id="btn-export-json">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            JSON
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="clearHistory()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                        <button class="btn btn-danger btn-sm" id="btn-clear-history">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                             Clear
                         </button>
                     </div>
                 </div>
 
-                <!-- Stats row -->
-                <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:1rem">
-                    <div class="stat-card"><div class="stat-val" id="h-stat-total">0</div><div class="stat-label">Total</div></div>
-                    <div class="stat-card"><div class="stat-val" id="h-stat-ai">0</div><div class="stat-label">AI-gen</div></div>
-                    <div class="stat-card"><div class="stat-val" id="h-stat-heuristic">0</div><div class="stat-label">Heuristic</div></div>
-                    <div class="stat-card"><div class="stat-val" id="h-stat-tokens">0</div><div class="stat-label">Tokens est.</div></div>
+                <div class="stats-row" id="history-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-label">Total commits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-ai">0</div>
+                        <div class="stat-label">AI-generated</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-heuristic">0</div>
+                        <div class="stat-label">Heuristic</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-tokens">0</div>
+                        <div class="stat-label">Est. tokens used</div>
+                    </div>
                 </div>
 
-                <div class="commit-list" id="history-list" style="max-height:none">
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                        <p>No history yet.</p>
+                <div class="history-filters">
+                    <select class="form-select" id="history-filter-repo">
+                        <option value="">All repositories</option>
+                    </select>
+                    <select class="form-select" id="history-filter-type">
+                        <option value="">All types</option>
+                        <option value="ai">AI-generated</option>
+                        <option value="heuristic">Heuristic</option>
+                    </select>
+                </div>
+
+                <div class="history-list" id="history-list">
+                    <div class="empty-state" id="history-empty">
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v5h5"/><path d="M3 8A9 9 0 1 0 5.65 5.65"/><path d="M12 7v5l4 2"/></svg>
+                        </div>
+                        <h3>No commits yet</h3>
+                        <p>Start the timer or commit manually to see history here.</p>
                     </div>
                 </div>
             </div>
 
-        </div><!-- /content -->
-    </div><!-- /main -->
-</div><!-- /app -->
-
-<!-- ─── ADD REPO MODAL ─────────────────────────────────────── -->
-<div class="modal-overlay" id="add-repo-modal">
-    <div class="modal">
-        <div class="modal-title">Add repository</div>
-        <div class="form-group">
-            <label>Repository path</label>
-            <div class="input-row">
-                <input type="text" id="new-repo-path" class="input" placeholder="/home/user/myproject" oninput="validateNewRepo()" />
-                <button class="btn btn-ghost btn-sm" onclick="validateNewRepo()">Check</button>
-            </div>
-            <div class="validation-msg" id="new-repo-validation"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>Interval (minutes)</label>
-                <input type="number" id="new-repo-interval" class="input" value="30" min="1" />
-            </div>
-            <div class="form-group">
-                <label>Cooldown (minutes)</label>
-                <input type="number" id="new-repo-cooldown" class="input" value="5" min="0" />
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Push target</label>
-            <input type="text" id="new-repo-push-branch" class="input" value="origin/main" />
-        </div>
-        <div class="form-group">
-            <label>Commit prefix <span style="color:var(--faint);font-weight:400">(optional)</span></label>
-            <input type="text" id="new-repo-prefix" class="input" placeholder="WIP: or feat(ui):" />
-        </div>
-        <div class="toggle-wrap">
-            <div class="toggle-info">
-                <span class="toggle-label">Enable auto-push</span>
-                <span class="toggle-desc">Push after each commit</span>
-            </div>
-            <label class="toggle">
-                <input type="checkbox" id="new-repo-push" checked />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </label>
-        </div>
-        <div class="toggle-wrap">
-            <div class="toggle-info">
-                <span class="toggle-label">Enable for this repo</span>
-                <span class="toggle-desc">Start auto-committing immediately</span>
-            </div>
-            <label class="toggle">
-                <input type="checkbox" id="new-repo-enabled" />
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </label>
-        </div>
-        <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeAddRepoModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="confirmAddRepo()">Add repo</button>
         </div>
     </div>
 </div>
 
-<!-- ─── BRANCH PICKER MODAL ───────────────────────────────── -->
-<div class="modal-overlay" id="branch-modal">
+<!-- ===== ADD / EDIT REPO MODAL ===== -->
+<div class="modal-backdrop" id="modal-repo" role="dialog" aria-modal="true" aria-labelledby="modal-repo-title">
     <div class="modal">
-        <div class="modal-title">Select remote branch</div>
-        <div id="branch-list" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:.375rem;margin-bottom:1rem"></div>
-        <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeBranchModal()">Close</button>
+        <div class="modal-header">
+            <span class="modal-title" id="modal-repo-title">Add repository</span>
+            <button class="btn-ghost btn-icon" id="btn-close-repo-modal" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="repo-edit-id" />
+
+            <div class="form-group">
+                <label class="form-label" for="repo-path">Repository path</label>
+                <div class="path-picker">
+                    <input class="form-input" id="repo-path" type="text" placeholder="/home/user/my-project" readonly
+                           style="cursor:pointer;background:var(--color-surface-offset)" />
+                    <button class="btn btn-secondary" id="btn-browse-repo" style="flex-shrink:0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        Browse
+                    </button>
+                </div>
+                <div class="form-hint" id="repo-path-hint"></div>
+            </div>
+
+            <div id="repo-preview" style="display:none">
+                <div class="dry-run-box" id="repo-diff-preview" style="margin-bottom:0">
+                    Checking diff...
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="repo-interval">Interval (minutes)</label>
+                    <input class="form-input" id="repo-interval" type="number" min="1" max="1440" value="30" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="repo-cooldown">Cooldown (minutes)</label>
+                    <input class="form-input" id="repo-cooldown" type="number" min="0" max="1440" value="5" />
+                    <div class="form-hint">Min time between commits (0=off)</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="repo-prefix">Commit prefix</label>
+                <input class="form-input" id="repo-prefix" type="text" placeholder='e.g. "WIP:" or "feat(ui):"' />
+                <div class="form-hint">Prepended to every generated message</div>
+            </div>
+
+            <div class="toggle-row">
+                <div>
+                    <div class="toggle-row-label">Auto push</div>
+                    <div class="toggle-row-sub">Push to remote after every commit</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="repo-push-enabled" checked />
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="form-group" id="push-branch-group">
+                <label class="form-label">Push target</label>
+                <div class="form-row" style="gap:var(--space-2)">
+                    <div class="form-group">
+                        <label class="form-label" for="repo-push-remote">Remote</label>
+                        <input class="form-input" id="repo-push-remote" type="text" placeholder="origin" value="origin" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="repo-push-branch">Branch</label>
+                        <input class="form-input" id="repo-push-branch" type="text" placeholder="main" value="main" />
+                    </div>
+                </div>
+                <div class="form-hint" id="push-branch-hint"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="btn-cancel-repo-modal">Cancel</button>
+            <button class="btn btn-primary" id="btn-save-repo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add repository
+            </button>
         </div>
     </div>
 </div>
 
+<!-- ===== DRY RUN MODAL ===== -->
+<div class="modal-backdrop" id="modal-dryrun" role="dialog" aria-modal="true" aria-labelledby="modal-dry-title">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="modal-dry-title">Dry Run Preview</span>
+            <button class="btn-ghost btn-icon" id="btn-close-dryrun-modal" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Generated commit message</label>
+                <div class="dry-run-box" id="dryrun-result" style="min-height:60px">
+                    <span class="spin"></span>
+                </div>
+            </div>
+            <div id="dryrun-diff" style="display:none">
+                <label class="form-label" style="margin-bottom:var(--space-2)">Diff stats</label>
+                <div class="diff-info" id="dryrun-diff-info"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="btn-cancel-dryrun">Close</button>
+            <button class="btn btn-primary" id="btn-commit-from-dry">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Commit now
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST CONTAINER -->
 <div id="toast-container"></div>
 
-<script>
-    const { invoke } = window.__TAURI__.core;
-    const { listen } = window.__TAURI__.event;
-
-    // ─── STATE ─────────────────────────────────────────────────
-    let timerRunning = false;
-    let history = [];
-    let repos = [];
-    let apiKeyVisible = false;
-
-    // ─── INIT ──────────────────────────────────────────────────
-    window.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const cfg = await invoke('load_config_from_file');
-            applyConfig(cfg);
-            await refreshHistory();
-            await refreshRepos();
-            updateStats();
-            if (cfg.auto_start) startTimer();
-
-            // Load masked API key hint
-            const masked = await invoke('get_masked_api_key');
-            if (masked !== 'sk-...') {
-                document.getElementById('api-key-mask-hint').textContent = `Saved key: ${masked}`;
-            }
-        } catch(e) { console.warn('Config load error', e); }
-
-        // Listen for commit events
-        listen('commit-status', e => {
-            const r = e.payload;
-            showToast(`✓ ${r.message}`, 'success');
-            refreshHistory();
-            updateStats();
-        });
-        listen('commit-error', e => showToast(e.payload, 'error'));
-    });
-
-    // ─── NAVIGATION ────────────────────────────────────────────
-    function showPanel(id, el) {
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('panel-' + id).classList.add('active');
-        el.classList.add('active');
-        document.getElementById('page-title').textContent =
-            id.charAt(0).toUpperCase() + id.slice(1);
-    }
-
-    // ─── THEME ─────────────────────────────────────────────────
-    let theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    function toggleTheme() {
-        theme = theme === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', theme);
-        document.getElementById('theme-label').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
-        document.getElementById('theme-icon').innerHTML = theme === 'dark'
-            ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
-            : '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
-    }
-
-    // ─── CONFIG ────────────────────────────────────────────────
-    function applyConfig(cfg) {
-        setValue('repo-path', cfg.repo_path);
-        setValue('interval-minutes', cfg.interval_minutes);
-        setValue('smart-threshold', cfg.smart_threshold_lines);
-        setValue('base-url', cfg.llm_base_url);
-        setValue('model-name', cfg.llm_model_name);
-        setValue('provider', cfg.provider);
-        setValue('smart-mode', cfg.smart_mode);
-        setChecked('auto-start', cfg.auto_start);
-        setChecked('push-enabled', cfg.push_enabled !== false);
-        setValue('push-branch', cfg.push_branch || 'origin/main');
-        setValue('commit-prefix', cfg.commit_prefix || '');
-        setValue('cooldown-min', cfg.cooldown_minutes ?? 5);
-        onPushToggle();
-        updateApiKeyGroup();
-        if (cfg.commit_history) {
-            history = cfg.commit_history;
-        }
-    }
-
-    function getConfigFromUI() {
-        return {
-            repo_path: g('repo-path'),
-            auto_commit_enabled: timerRunning,
-            interval_minutes: parseInt(g('interval-minutes')) || 30,
-            auto_start: getChecked('auto-start'),
-            provider: g('provider'),
-            llm_base_url: g('base-url'),
-            llm_model_name: g('model-name'),
-            llm_api_key: g('api-key'),
-            smart_mode: g('smart-mode'),
-            smart_threshold_lines: parseInt(g('smart-threshold')) || 10,
-            push_enabled: getChecked('push-enabled'),
-            push_branch: g('push-branch'),
-            commit_prefix: g('commit-prefix'),
-            cooldown_minutes: parseInt(g('cooldown-min')) || 5,
-            repos: repos,
-            commit_history: history,
-        };
-    }
-
-    async function saveSettings() {
-        try {
-            const cfg = getConfigFromUI();
-            await invoke('save_config', { config: cfg });
-            showToast('Settings saved', 'success');
-            const masked = await invoke('get_masked_api_key');
-            if (masked !== 'sk-...') {
-                document.getElementById('api-key-mask-hint').textContent = `Saved key: ${masked}`;
-            }
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    // ─── TIMER ─────────────────────────────────────────────────
-    async function startTimer() {
-        try {
-            const cfg = getConfigFromUI();
-            await invoke('save_config', { config: cfg });
-            await invoke('start_auto_commit');
-            timerRunning = true;
-            document.getElementById('btn-start').disabled = true;
-            document.getElementById('btn-stop').disabled = false;
-            document.getElementById('timer-badge').className = 'badge badge-green';
-            document.getElementById('timer-badge').innerHTML = '<span class="badge-dot"></span>Running';
-            showToast('Auto-commit started', 'success');
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    async function stopTimer() {
-        try {
-            await invoke('stop_auto_commit');
-            timerRunning = false;
-            document.getElementById('btn-start').disabled = false;
-            document.getElementById('btn-stop').disabled = true;
-            document.getElementById('timer-badge').className = 'badge badge-red';
-            document.getElementById('timer-badge').innerHTML = '<span class="badge-dot"></span>Stopped';
-            showToast('Timer stopped', 'success');
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    // ─── QUICK COMMIT ──────────────────────────────────────────
-    async function runCommitNow() {
-        const path = g('repo-path');
-        if (!path) { showToast('Set a repository path first', 'error'); return; }
-        try {
-            const r = await invoke('run_commit', { path });
-            showToast(r.message === 'No changes to commit' ? 'Nothing to commit' : `✓ ${r.message}`,
-                r.message === 'No changes to commit' ? 'error' : 'success');
-            await refreshHistory();
-            updateStats();
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    async function runDryRun() {
-        const path = g('repo-path');
-        if (!path) { showToast('Set a repository path first', 'error'); return; }
-        try {
-            const r = await invoke('dry_run_commit', { path });
-            const box = document.getElementById('dry-run-box');
-            document.getElementById('dry-run-msg').textContent = r.message;
-            if (r.diff_stats) {
-                document.getElementById('dry-run-stats').textContent =
-                    `${r.diff_stats.files_changed} files · +${r.diff_stats.insertions} -${r.diff_stats.deletions} lines · ~${r.diff_stats.estimated_tokens} tokens`;
-            }
-            box.classList.add('visible');
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    async function previewTokens() {
-        const path = g('repo-path');
-        if (!path) { showToast('Set a repository path first', 'error'); return; }
-        try {
-            const stats = await invoke('get_diff_preview', { path });
-            document.getElementById('token-hint').style.display = 'flex';
-            document.getElementById('token-count').textContent =
-                `${stats.estimated_tokens} (~$${(stats.estimated_tokens * 0.000002).toFixed(5)})`;
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    // ─── VALIDATION ────────────────────────────────────────────
-    let repoValidateTimer;
-    function onRepoPathInput() {
-        clearTimeout(repoValidateTimer);
-        repoValidateTimer = setTimeout(validateRepo, 800);
-    }
-
-    async function validateRepo() {
-        const path = g('repo-path');
-        if (!path) return;
-        const msg = document.getElementById('repo-validation');
-        try {
-            const ok = await invoke('validate_repo_path', { path });
-            msg.textContent = ok ? '✓ Valid git repository' : '✗ No .git directory found';
-            msg.className = `validation-msg visible ${ok ? 'ok' : 'err'}`;
-            if (ok) fetchBranch();
-        } catch(e) {
-            msg.textContent = '✗ Could not validate path';
-            msg.className = 'validation-msg visible err';
-        }
-    }
-
-    async function validateNewRepo() {
-        const path = g('new-repo-path');
-        if (!path) return;
-        const msg = document.getElementById('new-repo-validation');
-        try {
-            const ok = await invoke('validate_repo_path', { path });
-            msg.textContent = ok ? '✓ Valid git repository' : '✗ No .git directory found';
-            msg.className = `validation-msg visible ${ok ? 'ok' : 'err'}`;
-        } catch(e) { msg.textContent = '✗ Error'; msg.className = 'validation-msg visible err'; }
-    }
-
-    async function fetchBranch() {
-        const path = g('repo-path');
-        if (!path) return;
-        try {
-            const branch = await invoke('get_current_branch', { path });
-            document.getElementById('active-branch').value = branch;
-        } catch(_) {}
-    }
-
-    async function listBranches() {
-        const path = g('repo-path');
-        if (!path) { showToast('Set a repo path first', 'error'); return; }
-        try {
-            const branches = await invoke('list_remote_branches', { path });
-            const list = document.getElementById('branch-list');
-            list.innerHTML = '';
-            if (!branches.length) {
-                list.innerHTML = '<div style="color:var(--muted);font-size:var(--sm)">No remote branches found</div>';
-            }
-            branches.forEach(b => {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-ghost';
-                btn.style.justifyContent = 'flex-start';
-                btn.textContent = b;
-                btn.onclick = () => { setValue('push-branch', b); closeBranchModal(); };
-                list.appendChild(btn);
-            });
-            document.getElementById('branch-modal').classList.add('open');
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    function closeBranchModal() {
-        document.getElementById('branch-modal').classList.remove('open');
-    }
-
-    // ─── PUSH TOGGLE ───────────────────────────────────────────
-    function onPushToggle() {
-        const en = getChecked('push-enabled');
-        document.getElementById('push-branch-row').style.display = en ? '' : 'none';
-    }
-
-    // ─── API KEY ───────────────────────────────────────────────
-    function toggleApiKeyVisibility() {
-        apiKeyVisible = !apiKeyVisible;
-        const inp = document.getElementById('api-key');
-        inp.type = apiKeyVisible ? 'text' : 'password';
-    }
-
-    function updateApiKeyGroup() {
-        const provider = g('provider');
-        const cloudProviders = ['open_ai','groq','gemini','anthropic','mistral','together','open_router'];
-        const show = cloudProviders.includes(provider);
-        document.getElementById('api-key-group').style.display = show ? '' : 'none';
-    }
-
-    async function onProviderChange() {
-        const provider = g('provider');
-        updateApiKeyGroup();
-        try {
-            const [url, model] = await invoke('get_provider_defaults', { provider: provider });
-            setValue('base-url', url);
-            setValue('model-name', model);
-        } catch(_) {}
-    }
-
-    async function testConnection() {
-        const result = document.getElementById('conn-result');
-        result.textContent = 'Testing…';
-        result.className = 'validation-msg visible';
-        try {
-            const msg = await invoke('test_connection', {
-                provider: g('provider'),
-                baseUrl: g('base-url'),
-                model: g('model-name'),
-                apiKey: g('api-key'),
-            });
-            result.textContent = `✓ ${msg}`;
-            result.className = 'validation-msg visible ok';
-        } catch(e) {
-            result.textContent = `✗ ${e}`;
-            result.className = 'validation-msg visible err';
-        }
-    }
-
-    // ─── HISTORY ───────────────────────────────────────────────
-    async function refreshHistory() {
-        try {
-            history = await invoke('get_commit_history');
-            renderHistory();
-            renderRecentCommits();
-            updateStats();
-        } catch(_) {}
-    }
-
-    function renderRecentCommits() {
-        const el = document.getElementById('recent-commits');
-        if (!history.length) {
-            el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><p>No commits yet.</p></div>`;
-            return;
-        }
-        el.innerHTML = history.slice(0, 10).map(c => commitItemHtml(c)).join('');
-    }
-
-    function renderHistory() {
-        const el = document.getElementById('history-list');
-        if (!history.length) {
-            el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><p>No history yet.</p></div>`;
-            return;
-        }
-        el.innerHTML = history.map(c => commitItemHtml(c)).join('');
-
-        // Update history stats
-        const total = history.length;
-        const ai = history.filter(c => c.used_llm).length;
-        const tokens = history.reduce((s, c) => s + (c.estimated_tokens || 0), 0);
-        document.getElementById('h-stat-total').textContent = total;
-        document.getElementById('h-stat-ai').textContent = ai;
-        document.getElementById('h-stat-heuristic').textContent = total - ai;
-        document.getElementById('h-stat-tokens').textContent = formatNum(tokens);
-    }
-
-    function commitItemHtml(c) {
-        const date = new Date(c.timestamp * 1000).toLocaleString();
-        const repo = c.repo_path.split(/[\\/]/).pop() || c.repo_path;
-        return `<div class="commit-item">
-    <div class="commit-msg">${escHtml(c.message)}</div>
-    <div class="commit-badges">
-      <span class="badge ${c.used_llm ? 'badge-blue' : 'badge-yellow'}">${c.used_llm ? 'AI' : 'Heuristic'}</span>
-    </div>
-    <div class="commit-meta">
-      <span>${date}</span>
-      <span>${escHtml(repo)}</span>
-      ${c.files_changed ? `<span>+${c.insertions} -${c.deletions} in ${c.files_changed} files</span>` : ''}
-      ${c.estimated_tokens ? `<span>~${c.estimated_tokens} tokens</span>` : ''}
-    </div>
-  </div>`;
-    }
-
-    function updateStats() {
-        const total = history.length;
-        const ai = history.filter(c => c.used_llm).length;
-        const tokens = history.reduce((s, c) => s + (c.estimated_tokens || 0), 0);
-        // Tokens "saved" = heuristic commits * average tokens for a cloud call (~300)
-        const saved = (total - ai) * 300;
-        document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-ai').textContent = ai;
-        document.getElementById('stat-heuristic').textContent = total - ai;
-        document.getElementById('stat-tokens').textContent = formatNum(saved);
-    }
-
-    async function clearHistory() {
-        if (!confirm('Clear all commit history?')) return;
-        try {
-            await invoke('clear_commit_history');
-            history = [];
-            renderHistory();
-            renderRecentCommits();
-            updateStats();
-            showToast('History cleared', 'success');
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    async function exportCSV() {
-        try {
-            const csv = await invoke('export_history_csv');
-            downloadBlob(csv, 'commit-history.csv', 'text/csv');
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    function exportJSON() {
-        const json = JSON.stringify(history, null, 2);
-        downloadBlob(json, 'commit-history.json', 'application/json');
-    }
-
-    function downloadBlob(content, filename, type) {
-        const blob = new Blob([content], { type });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = filename; a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // ─── MULTI-REPO ────────────────────────────────────────────
-    async function refreshRepos() {
-        try {
-            repos = await invoke('get_repos');
-            renderRepos();
-        } catch(_) {}
-    }
-
-    function renderRepos() {
-        const el = document.getElementById('repo-list');
-        if (!repos.length) {
-            el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18M3 12h18M3 21h18"/></svg><p>No repositories added yet.</p></div>`;
-            return;
-        }
-        el.innerHTML = repos.map(r => `
-    <div class="repo-item">
-      <div class="repo-item-info">
-        <div class="repo-item-path" title="${escHtml(r.path)}">${escHtml(r.path)}</div>
-        <div class="repo-item-meta">
-          Every ${r.interval_minutes}min · ${r.push_enabled ? `→ ${r.push_branch}` : 'No push'} · Cooldown ${r.cooldown_minutes}min
-          ${r.commit_prefix ? `· Prefix: <code>${escHtml(r.commit_prefix)}</code>` : ''}
-        </div>
-      </div>
-      <div class="repo-item-actions">
-        <span class="badge ${r.enabled ? 'badge-green' : 'badge-red'}">${r.enabled ? 'Active' : 'Paused'}</span>
-        <button class="btn btn-ghost btn-sm btn-icon" title="Remove" onclick="removeRepo('${r.id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-        </button>
-      </div>
-    </div>
-  `).join('');
-    }
-
-    function openAddRepoModal() {
-        document.getElementById('add-repo-modal').classList.add('open');
-    }
-
-    function closeAddRepoModal() {
-        document.getElementById('add-repo-modal').classList.remove('open');
-    }
-
-    async function confirmAddRepo() {
-        const path = g('new-repo-path');
-        if (!path) { showToast('Path is required', 'error'); return; }
-        const repo = {
-            id: Date.now().toString(36),
-            path,
-            interval_minutes: parseInt(g('new-repo-interval')) || 30,
-            cooldown_minutes: parseInt(g('new-repo-cooldown')) || 5,
-            push_branch: g('new-repo-push-branch') || 'origin/main',
-            commit_prefix: g('new-repo-prefix') || '',
-            push_enabled: getChecked('new-repo-push'),
-            enabled: getChecked('new-repo-enabled'),
-            last_commit_time: 0,
-        };
-        try {
-            await invoke('add_repo', { repo });
-            repos.push(repo);
-            renderRepos();
-            closeAddRepoModal();
-            showToast('Repository added', 'success');
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    async function removeRepo(id) {
-        if (!confirm('Remove this repository?')) return;
-        try {
-            await invoke('remove_repo', { id });
-            repos = repos.filter(r => r.id !== id);
-            renderRepos();
-            showToast('Repository removed', 'success');
-        } catch(e) { showToast(e.toString(), 'error'); }
-    }
-
-    // ─── TOAST ─────────────────────────────────────────────────
-    function showToast(msg, type = 'success') {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        const icon = type === 'success'
-            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>'
-            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-        toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${escHtml(msg)}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-    }
-
-    // ─── UTILS ─────────────────────────────────────────────────
-    const g = id => document.getElementById(id)?.value ?? '';
-    const setValue = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
-    const getChecked = id => document.getElementById(id)?.checked ?? false;
-    const setChecked = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
-    const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const formatNum = n => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n);
-</script>
+<script src="app.js" type="module"></script>
 </body>
 </html>

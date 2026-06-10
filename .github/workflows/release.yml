@@ -1,28 +1,26 @@
-# .github/workflows/release.yml
-name: Release
+﻿name: Release
 
 on:
   push:
     tags:
-      - 'v*'            # se dispara al hacer: git tag v1.0.0 && git push --tags
+      - 'v*'
 
 jobs:
   release:
     permissions:
       contents: write
-
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
-            args: '--target aarch64-apple-darwin'    # Apple Silicon
-          - platform: macos-latest
-            args: '--target x86_64-apple-darwin'     # Intel Mac
           - platform: ubuntu-22.04
             args: ''
           - platform: windows-latest
             args: ''
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+          - platform: macos-latest
+            args: '--target x86_64-apple-darwin'
 
     runs-on: ${{ matrix.platform }}
 
@@ -33,8 +31,7 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
-            librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - uses: actions/setup-node@v4
         with:
@@ -45,7 +42,7 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - uses: Swatinem/rust-cache@v2    # cachea dependencias Rust → builds mucho más rápidos
+      - uses: Swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
@@ -56,8 +53,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Auto Commit ${{ github.ref_name }}'
+          releaseName: 'AutoCommit ${{ github.ref_name }}'
           releaseBody: 'See CHANGELOG.md for details.'
-          releaseDraft: true        # queda en borrador hasta que lo publicas manualmente
+          releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

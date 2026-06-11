@@ -36,9 +36,14 @@ pub async fn start_auto_commit(
         loop {
             tick.tick().await;
 
-            let Ok(running) = timer_arc.lock() else { break; };
-            if !*running { break; }
-            drop(running);
+            // Leer el flag y soltar el lock en un bloque antes de cualquier await
+            let is_running = {
+                match timer_arc.lock() {
+                    Ok(guard) => *guard,
+                    Err(_) => break,
+                }
+            };
+            if !is_running { break; }
 
             let (repo_path, provider, base_url, model, api_key,
                 smart_mode, threshold, push_enabled, push_remote,

@@ -31,7 +31,6 @@ impl LlmProvider {
             LlmProvider::OpenRouter => "https://openrouter.ai/api/v1",
         }
     }
-
     pub fn default_model(&self) -> &'static str {
         match self {
             LlmProvider::LmStudio   => "local-model",
@@ -47,7 +46,6 @@ impl LlmProvider {
             LlmProvider::OpenRouter => "openai/gpt-4o-mini",
         }
     }
-
     pub fn requires_api_key(&self) -> bool {
         matches!(self,
             LlmProvider::OpenAi | LlmProvider::Groq | LlmProvider::Gemini |
@@ -55,7 +53,6 @@ impl LlmProvider {
             LlmProvider::Together | LlmProvider::OpenRouter
         )
     }
-
     pub fn is_anthropic(&self) -> bool { *self == LlmProvider::Anthropic }
 }
 
@@ -80,6 +77,10 @@ pub struct RepoEntry {
     pub id: String,
     pub path: String,
     pub interval_minutes: u64,
+    /// Si el timer automatico esta activo para este repo
+    #[serde(default)]
+    pub timer_enabled: bool,
+    /// Si el repo esta habilitado (visible/activo en la UI)
     pub enabled: bool,
     pub push_enabled: bool,
     pub push_remote: String,
@@ -123,10 +124,15 @@ pub struct AppConfig {
     pub commit_prefix: String,
     pub cooldown_minutes: u64,
     pub human_in_the_loop: bool,
+    /// Tema de la interfaz: "dark" o "light"
+    #[serde(default = "default_theme")]
+    pub theme: String,
     pub last_successful_commit: u64,
     pub repos: Vec<RepoEntry>,
     pub commit_history: Vec<CommitHistoryEntry>,
 }
+
+fn default_theme() -> String { "dark".to_string() }
 
 impl Default for AppConfig {
     fn default() -> Self {
@@ -148,6 +154,7 @@ impl Default for AppConfig {
             commit_prefix: String::new(),
             cooldown_minutes: 5,
             human_in_the_loop: true,
+            theme: "dark".to_string(),
             last_successful_commit: 0,
             repos: Vec::new(),
             commit_history: Vec::new(),

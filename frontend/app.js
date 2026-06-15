@@ -593,7 +593,7 @@ async function testConnection() {
     btn.innerHTML  = '<span class="spin"></span>';
     result.style.display = 'none';
     try {
-        await invoke('test_connection', { provider, base_url: baseUrl, model, api_key: apiKey });
+        await invoke('test_connection', { provider, baseUrl: baseUrl, model, apiKey: apiKey });
         result.style.display = '';
         result.innerHTML = '<span class="test-status ok">Connection successful</span>';
     } catch (e) {

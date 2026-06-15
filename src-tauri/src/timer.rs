@@ -73,37 +73,80 @@ pub async fn start_auto_commit(
                     &commit_prefix, cooldown, last_commit, false, hitl,
                 ).await {
                     Ok(r) => {
-                        let skip = r.pending_approval.is_some()
-                            || r.message == "No changes to commit"
+                        // 1. ¿Ignoramos este intento por completo? Solo si no hay cambios o hay cooldown
+                        let is_empty = r.message == "No changes to commit"
                             || r.message.starts_with("Cooldown");
 
-                        if !skip {
-                            let stats = r.diff_stats.clone().unwrap_or(DiffStatsPublic {
-                                files_changed: 0, insertions: 0,
-                                deletions: 0, estimated_tokens: 0,
-                            });
-                            let entry = CommitHistoryEntry {
-                                timestamp: now_unix(),
-                                repo_path: path.clone(),
-                                message: r.message.clone(),
-                                used_llm: r.used_llm,
-                                files_changed: stats.files_changed,
-                                insertions: stats.insertions,
-                                deletions: stats.deletions,
-                                estimated_tokens: stats.estimated_tokens,
-                            };
-                            // Actualizar last_commit_time del repo
-                            if let Ok(mut c) = config_arc.lock() {
-                                if let Some(re) = c.repos.iter_mut().find(|re| re.path == path) {
-                                    re.last_commit_time = now_unix();
+                        if !is_empty {
+                            // 2. Si NO requiere aprobación, lo guardamos ya en el historial y reseteamos el tiempo
+                            if r.pending_approval.is_none() {
+                                let stats = r.diff_stats.clone().unwrap_or(DiffStatsPublic {
+                                    files_changed: 0, insertions: 0,
+                                    deletions: 0, estimated_tokens: 0,
+                                });
+                                let entry = CommitHistoryEntry {
+                                    timestamp: now_unix(),
+                                    repo_path: path.clone(),
+                                    message: r.message.clone(),
+                                    used_llm: r.used_llm,
+                                    files_changed: stats.files_changed,
+                                    insertions: stats.insertions,
+                                    deletions: stats.deletions,
+                                    estimated_tokens: stats.estimated_tokens,
+                                };
+                                if let Ok(mut c) = config_arc.lock() {
+                                    if let Some(re) = c.repos.iter_mut().find(|re| re.path == path) {
+                                        re.last_commit_time = now_unix();
+                                    }
+                                    push_history(&mut c, entry);
                                 }
-                                push_history(&mut c, entry);
                             }
+
+                            // 3. SIEMPRE enviamos el evento a la UI.
+                            // Si tiene pending_approval, el JS lo capturará y abrirá el modal.
                             let _ = app_handle.emit("commit-status", &r);
                         }
                     }
                     Err(e) => { let _ = app_handle.emit("commit-error", &e); }
                 }
+                // match run_commit_internal(
+                //     &path, &provider, &base_url, &model, &api_key,
+                //     &smart_mode, threshold, push_enabled,
+                //     &push_remote, &push_branch,
+                //     &commit_prefix, cooldown, last_commit, false, hitl,
+                // ).await {
+                //     Ok(r) => {
+                //         let skip = r.pending_approval.is_some()
+                //             || r.message == "No changes to commit"
+                //             || r.message.starts_with("Cooldown");
+                //
+                //         if !skip {
+                //             let stats = r.diff_stats.clone().unwrap_or(DiffStatsPublic {
+                //                 files_changed: 0, insertions: 0,
+                //                 deletions: 0, estimated_tokens: 0,
+                //             });
+                //             let entry = CommitHistoryEntry {
+                //                 timestamp: now_unix(),
+                //                 repo_path: path.clone(),
+                //                 message: r.message.clone(),
+                //                 used_llm: r.used_llm,
+                //                 files_changed: stats.files_changed,
+                //                 insertions: stats.insertions,
+                //                 deletions: stats.deletions,
+                //                 estimated_tokens: stats.estimated_tokens,
+                //             };
+                //             // Actualizar last_commit_time del repo
+                //             if let Ok(mut c) = config_arc.lock() {
+                //                 if let Some(re) = c.repos.iter_mut().find(|re| re.path == path) {
+                //                     re.last_commit_time = now_unix();
+                //                 }
+                //                 push_history(&mut c, entry);
+                //             }
+                //             let _ = app_handle.emit("commit-status", &r);
+                //         }
+                //     }
+                //     Err(e) => { let _ = app_handle.emit("commit-error", &e); }
+                // }
             }
         }
     });

@@ -7,12 +7,18 @@ use crate::config::{LlmProvider, Result};
 pub static HTTP_CLIENT: Lazy<Client> = Lazy::new(Client::new);
 
 pub const SYSTEM_PROMPT: &str = r#"
-You are an expert Git commit message generator.
-Analyze the provided git diff and generate a concise, conventional commit message.
-Format: <type>(<optional scope>): <description>
-Types: feat, fix, docs, style, refactor, test, chore.
-Example: feat: add multi-provider LLM support
-IMPORTANT: Respond ONLY with the commit message. No quotes, no explanations, no markdown.
+You are a strict Git commit message generator.
+Analyze the diff and generate a SINGLE LINE commit message using the Conventional Commits standard.
+
+RULES:
+1. Format: <type>(<scope>): <description>
+2. Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
+3. The description MUST be in lowercase, imperative mood ("add", not "added" or "adds"), and under 72 characters.
+4. NEVER wrap the output in quotes, backticks, code blocks, or markdown.
+5. NEVER output any conversational text, greetings, or explanations.
+
+BAD OUTPUT: Here is your message: `feat: add login`
+GOOD OUTPUT: feat(auth): implement JWT login
 "#;
 
 // ---------- REQUEST / RESPONSE STRUCTS ----------

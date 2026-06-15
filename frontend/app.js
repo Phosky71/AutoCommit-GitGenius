@@ -533,7 +533,6 @@ async function loadSettings() {
         document.getElementById('cfg-base-url').value         = cfg.llm_base_url    || '';
         document.getElementById('cfg-model').value            = cfg.llm_model_name  || '';
         document.getElementById('cfg-threshold').value        = cfg.smart_threshold_lines || 10;
-        document.getElementById('cfg-auto-start').checked     = !!cfg.auto_start;
 
         // Human in the loop
         humanInTheLoop = cfg.human_in_the_loop !== undefined ? cfg.human_in_the_loop : true;
@@ -547,9 +546,7 @@ async function loadSettings() {
 
         setSmartMode(cfg.smart_mode || 'smart');
 
-        if (cfg.auto_start) {
-            try { await invoke('start_auto_commit'); setTimerState(true); } catch (e) {}
-        }
+        // ELIMINADO: La lógica de auto_start ya no se usa porque arranca por defecto.
     } catch (e) {
         console.error('loadSettings', e);
     }
@@ -566,8 +563,10 @@ async function onProviderChange() {
 
 function setSmartMode(val) {
     smartMode = val;
-    document.querySelectorAll('#smart-mode-ctrl .segment-btn').forEach(btn =>
+    // ANTES: document.querySelectorAll('#smart-mode-ctrl .segment-btn').forEach(...)
+    document.querySelectorAll('.smart-mode-ctrl .segment-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.val === val));
+
     const hints = {
         always: 'LLM is always used to generate commit messages',
         smart:  'LLM only when diff is significant (recommended)',
@@ -576,7 +575,6 @@ function setSmartMode(val) {
     document.getElementById('smart-mode-hint').textContent = hints[val] || '';
     document.getElementById('threshold-group').style.display = val === 'smart' ? '' : 'none';
 }
-
 function toggleApiKeyVisibility() {
     const input = document.getElementById('cfg-api-key');
     input.type  = input.type === 'password' ? 'text' : 'password';
@@ -605,49 +603,86 @@ async function testConnection() {
     }
 }
 
-async function saveSettings() {
-    const provider  = document.getElementById('cfg-provider').value;
-    const baseUrl   = document.getElementById('cfg-base-url').value.trim();
-    const model     = document.getElementById('cfg-model').value.trim();
-    const apiKey    = document.getElementById('cfg-api-key').value.trim();
-    const threshold = parseInt(document.getElementById('cfg-threshold').value) || 10;
-    const interval  = 30;
-    const autoStart = document.getElementById('cfg-auto-start').checked;
-    // ← CORREGIDO: leer y guardar human_in_the_loop
-    const humanItl  = document.getElementById('cfg-human-in-the-loop')?.checked ?? true;
-    humanInTheLoop  = humanItl;
 
-    const cfg = {
-        repo_path:             '',
-        auto_commit_enabled:   false,
-        interval_minutes:      interval,
-        auto_start:            autoStart,
-        provider,
-        llm_base_url:          baseUrl,
-        llm_model_name:        model,
-        llm_api_key:           apiKey,
-        smart_mode:            smartMode,
-        smart_threshold_lines: threshold,
-        human_in_the_loop:     humanItl,
-        // Campos legado — se mantienen por compatibilidad con AppConfig pero no se usan
-        push_enabled:   true,
-        push_remote:    'origin',
-        push_branch:    'main',
-        commit_prefix:  '',
-        cooldown_minutes: 0,
-        last_successful_commit: 0,
-        repos:          [],
-        commit_history: [],
-    };
+async function saveSettings() {
+    const btn = document.getElementById('btn-save-settings');
+    btn.disabled = true;
+
     try {
+        const cfg = await invoke('get_config');
+
+        cfg.provider              = document.getElementById('cfg-provider').value;
+        cfg.llm_base_url          = document.getElementById('cfg-base-url').value.trim();
+        cfg.llm_model_name        = document.getElementById('cfg-model').value.trim();
+
+        const apiKey = document.getElementById('cfg-api-key').value.trim();
+        if (apiKey) {
+            cfg.llm_api_key = apiKey;
+        }
+
+        cfg.smart_mode            = smartMode;
+        cfg.smart_threshold_lines = parseInt(document.getElementById('cfg-threshold').value) || 10;
+
+        // Solo leemos el Human in the loop (ya no existe el auto-start)
+        cfg.human_in_the_loop     = document.getElementById('cfg-human-in-the-loop').checked;
+        humanInTheLoop = cfg.human_in_the_loop;
+
         await invoke('save_config', { config: cfg });
         toast('Settings saved', 'success');
+
         if (apiKey) {
             document.getElementById('cfg-api-key').value       = '';
             document.getElementById('cfg-api-key').placeholder = 'sk-…';
         }
-    } catch (e) { toast('Failed to save settings: ' + e, 'error'); }
+    } catch (e) {
+        toast('Failed to save settings: ' + e, 'error');
+    } finally {
+        btn.disabled = false;
+    }
 }
+// async function saveSettings() {
+//     const provider  = document.getElementById('cfg-provider').value;
+//     const baseUrl   = document.getElementById('cfg-base-url').value.trim();
+//     const model     = document.getElementById('cfg-model').value.trim();
+//     const apiKey    = document.getElementById('cfg-api-key').value.trim();
+//     const threshold = parseInt(document.getElementById('cfg-threshold').value) || 10;
+//     const interval  = 30;
+//     const autoStart = document.getElementById('cfg-auto-start').checked;
+//     // ← CORREGIDO: leer y guardar human_in_the_loop
+//     const humanItl  = document.getElementById('cfg-human-in-the-loop')?.checked ?? true;
+//     humanInTheLoop  = humanItl;
+//
+//     const cfg = {
+//         repo_path:             '',
+//         auto_commit_enabled:   false,
+//         interval_minutes:      interval,
+//         auto_start:            autoStart,
+//         provider,
+//         llm_base_url:          baseUrl,
+//         llm_model_name:        model,
+//         llm_api_key:           apiKey,
+//         smart_mode:            smartMode,
+//         smart_threshold_lines: threshold,
+//         human_in_the_loop:     humanItl,
+//         // Campos legado — se mantienen por compatibilidad con AppConfig pero no se usan
+//         push_enabled:   true,
+//         push_remote:    'origin',
+//         push_branch:    'main',
+//         commit_prefix:  '',
+//         cooldown_minutes: 0,
+//         last_successful_commit: 0,
+//         repos:          repos,
+//         commit_history: [],
+//     };
+//     try {
+//         await invoke('save_config', { config: cfg });
+//         toast('Settings saved', 'success');
+//         if (apiKey) {
+//             document.getElementById('cfg-api-key').value       = '';
+//             document.getElementById('cfg-api-key').placeholder = 'sk-…';
+//         }
+//     } catch (e) { toast('Failed to save settings: ' + e, 'error'); }
+// }
 
 /* ── HISTORY ──────────────────────────────────────────────── */
 async function loadHistory() {
@@ -760,9 +795,11 @@ function downloadText(content, filename, mime) {
 
 /* ── APPROVAL MODAL (Human in the Loop) ──────────────────── */
 let approvalPath = '';
+let approvalUsedLlm = false;
 
 function openApprovalModal(path, pending) {
     approvalPath = path;
+    approvalUsedLlm = pending.used_llm;
     document.getElementById('approval-message').value        = pending.message || '';
     document.getElementById('approval-push-enabled').checked = true;
 
@@ -814,6 +851,7 @@ async function confirmApproval() {
             path: approvalPath,
             message,
             pushEnabled: Boolean(push_enabled),
+            usedLlm: approvalUsedLlm
         });
         closeApprovalModal();
         toast(`Committed: ${result.message}`, 'success', 5000);
@@ -881,7 +919,8 @@ async function init() {
     document.getElementById('cfg-provider').addEventListener('change', onProviderChange);
     document.getElementById('btn-toggle-apikey').addEventListener('click', toggleApiKeyVisibility);
     document.getElementById('btn-test').addEventListener('click', testConnection);
-    document.querySelectorAll('#smart-mode-ctrl .segment-btn').forEach(btn =>
+    // ANTES: document.querySelectorAll('#smart-mode-ctrl .segment-btn').forEach(...)
+    document.querySelectorAll('.smart-mode-ctrl .segment-btn').forEach(btn =>
         btn.addEventListener('click', () => setSmartMode(btn.dataset.val)));
 
     document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
@@ -893,6 +932,13 @@ async function init() {
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') { closeRepoModal(); closeDryRunModal(); closeApprovalModal(); }
     });
+
+
+    try {
+        await invoke('start_auto_commit');
+    } catch (e) {
+
+    }
 
     setupRepoDelegation();
     await loadSettings();

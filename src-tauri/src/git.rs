@@ -30,12 +30,13 @@ pub fn analyze_diff(diff: &str, threshold_lines: u64) -> DiffStats {
         }
     }
     let total = (insertions + deletions) as u64;
+    let prompt_overhead_tokens = 95;
     DiffStats {
         files_changed,
         insertions,
         deletions,
         is_significant: total >= threshold_lines || files_changed >= 3,
-        estimated_tokens: diff.len() / 4,
+        estimated_tokens: (diff.len() / 4) + prompt_overhead_tokens,
     }
 }
 
@@ -189,14 +190,39 @@ pub async fn run_commit_internal(
         }
     };
 
-    let mut clean_message = commit_message
-        .trim_matches('"')
-        .trim_matches('\'')
+    // --- NUEVO FILTRO DE SANITIZACIÓN ---
+    // 1. Tomar solo la primera línea no vacía que no sea un bloque markdown
+    let extracted_line = commit_message
+        .lines()
+        .find(|l| !l.trim().is_empty() && !l.starts_with("```"))
+        .unwrap_or(&commit_message);
+
+    // 2. Limpiar caracteres residuales (comillas, comillas simples, backticks)
+    let mut clean_message = extracted_line
+        .trim_matches(|c| c == '"' || c == '\'' || c == '`')
         .trim()
         .to_string();
+
+    // Limpiar prefijos indeseados típicos de los LLMs
+    if clean_message.to_lowercase().starts_with("here is") || clean_message.to_lowercase().starts_with("commit message:") {
+        if let Some(idx) = clean_message.find(':') {
+            clean_message = clean_message[idx + 1..].trim().to_string();
+        }
+    }
+    // ------------------------------------
+
     if !commit_prefix.is_empty() {
         clean_message = format!("{} {}", commit_prefix.trim(), clean_message);
     }
+
+    // let mut clean_message = commit_message
+    //     .trim_matches('"')
+    //     .trim_matches('\'')
+    //     .trim()
+    //     .to_string();
+    // if !commit_prefix.is_empty() {
+    //     clean_message = format!("{} {}", commit_prefix.trim(), clean_message);
+    // }
 
     // Dry run → salir antes de commitear
     if dry_run {

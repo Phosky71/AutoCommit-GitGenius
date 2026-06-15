@@ -11,10 +11,10 @@
 <body>
 <div id="app">
 
-  <!-- ── SIDEBAR ─────────────────────────────────────── -->
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="AutoCommit logo">
+      <svg id="brand-logo" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="AutoCommit logo">
         <rect width="28" height="28" rx="7" fill="var(--color-primary)"/>
         <circle cx="14" cy="14" r="4" stroke="#fff" stroke-width="2" fill="none"/>
         <line x1="1" y1="14" x2="9" y2="14" stroke="#fff" stroke-width="2"/>
@@ -22,7 +22,6 @@
       </svg>
       <span class="sidebar-brand-name">AutoCommit</span>
     </div>
-
     <nav class="sidebar-nav">
       <button class="nav-item active" data-section="repos">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -46,15 +45,12 @@
     </nav>
   </aside>
 
-  <!-- ── MAIN ────────────────────────────────────────── -->
+  <!-- MAIN -->
   <div class="main-wrap">
-
-    <!-- Topbar -->
     <header class="topbar">
       <h1 id="topbar-title" class="topbar-title">Repositories</h1>
       <div class="topbar-actions">
         <button id="theme-btn" class="theme-toggle" aria-label="Toggle theme">
-          <!-- icono inyectado por JS -->
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="5"/>
             <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
@@ -65,7 +61,7 @@
 
     <main class="main-content">
 
-      <!-- ══ REPOS PANEL ════════════════════════════════ -->
+      <!-- REPOS PANEL -->
       <section id="panel-repos" class="section-panel active">
         <div class="section-header">
           <div>
@@ -79,9 +75,7 @@
             Add repository
           </button>
         </div>
-
         <div id="repos-grid" class="repos-grid">
-          <!-- empty state -->
           <div id="repos-empty" class="empty-state">
             <div class="empty-state-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -90,12 +84,12 @@
             </div>
             <h3>No repositories yet</h3>
             <p>Add a Git repository to start automating commits with AI-generated messages.</p>
-            <button id="btn-add-repo-empty" class="btn btn-primary" onclick="openAddRepoModal()">Add repository</button>
+            <button id="btn-add-repo-empty" class="btn btn-primary">Add repository</button>
           </div>
         </div>
       </section>
 
-      <!-- ══ SETTINGS PANEL ═════════════════════════════ -->
+      <!-- SETTINGS PANEL -->
       <section id="panel-settings" class="section-panel">
         <div class="section-header">
           <div>
@@ -103,25 +97,24 @@
             <div class="section-sub">LLM provider, smart mode and commit behaviour</div>
           </div>
         </div>
-
         <div class="settings-grid">
 
-          <!-- LLM Provider card -->
+          <!-- LLM Provider -->
           <div class="card">
             <div class="card-header"><span class="settings-section-title">LLM Provider</span></div>
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="cfg-provider">Provider</label>
-                <select id="cfg-provider" class="form-select" onchange="onProviderChange(this.value)">
-                  <option value="lm_studio">LM Studio (local)</option>
+                <select id="cfg-provider" class="form-select">
+                  <option value="lmstudio">LM Studio (local)</option>
                   <option value="ollama">Ollama (local)</option>
-                  <option value="open_ai">OpenAI</option>
+                  <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
                   <option value="gemini">Google Gemini</option>
-                  <option value="open_router">OpenRouter</option>
+                  <option value="openrouter">OpenRouter</option>
                   <option value="groq">Groq</option>
                   <option value="mistral">Mistral</option>
-                  <option value="custom">Custom (OpenAI-compatible)</option>
+                  <option value="custom">Custom OpenAI-compatible</option>
                 </select>
               </div>
               <div class="form-group">
@@ -132,49 +125,53 @@
                 <label class="form-label" for="cfg-model">Model name</label>
                 <input id="cfg-model" class="form-input" type="text" placeholder="e.g. gpt-4o-mini">
               </div>
-              <div class="form-group" id="api-key-row" style="display:none">
+              <div class="form-group">
                 <label class="form-label" for="cfg-api-key">API Key</label>
                 <div class="input-with-btn">
                   <input id="cfg-api-key" class="form-input" type="password" placeholder="Masked after save.">
-                  <button id="btn-test-connection" class="btn btn-secondary">Test</button>
+                  <button id="btn-toggle-apikey" class="btn btn-secondary" type="button" title="Show/hide key">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
                 </div>
+              </div>
+              <div class="form-group">
+                <button id="btn-test" class="btn btn-secondary" type="button">Test connection</button>
+                <div id="test-result" style="display:none; margin-top: var(--space-2);"></div>
               </div>
             </div>
           </div>
 
-          <!-- Smart Mode card -->
+          <!-- Smart Mode -->
           <div class="card">
             <div class="card-header"><span class="settings-section-title">Smart Mode</span></div>
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label" for="cfg-smart-mode">LLM usage</label>
-                <select id="cfg-smart-mode" class="form-select">
-                  <option value="always">Always</option>
-                  <option value="smart" selected>Smart</option>
-                  <option value="never">Never</option>
-                </select>
-                <p class="form-hint">LLM only when diff is significant (recommended)</p>
+                <label class="form-label">LLM usage</label>
+                <div class="smart-mode-ctrl" style="display:flex; gap: var(--space-2); flex-wrap:wrap; margin-top: var(--space-1);">
+                  <button class="btn btn-secondary segment-btn" data-val="always" type="button">Always</button>
+                  <button class="btn btn-secondary segment-btn active" data-val="smart" type="button">Smart</button>
+                  <button class="btn btn-secondary segment-btn" data-val="never" type="button">Never</button>
+                </div>
+                <p id="smart-mode-hint" class="form-hint">LLM only when diff is significant (recommended)</p>
               </div>
-              <div class="form-group">
+              <div class="form-group" id="threshold-group">
                 <label class="form-label" for="cfg-threshold">Significance threshold (lines)</label>
                 <input id="cfg-threshold" class="form-input" type="number" min="1" max="500" value="10">
-                <p class="form-hint">Commit is "significant" if total changed lines ≥ this value</p>
+                <p class="form-hint">Commit is "significant" if total changed lines &ge; this value</p>
               </div>
             </div>
           </div>
 
-          <!-- Commit behaviour card -->
+          <!-- Commit Behaviour -->
           <div class="card">
             <div class="card-header"><span class="settings-section-title">Commit Behaviour</span></div>
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="cfg-prefix">Default commit prefix <span style="font-weight:400;text-transform:none">(optional)</span></label>
-                <input id="cfg-prefix" class="form-input" type="text" placeholder="e.g. [auto]">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="cfg-cooldown">Global cooldown (minutes)</label>
-                <input id="cfg-cooldown" class="form-input" type="number" min="0" max="120" value="5">
-                <p class="form-hint">Minimum time between consecutive commits</p>
+                <input id="cfg-prefix" class="form-input" type="text" placeholder="e.g. auto:">
+                <p class="form-hint">Each repository can override this in its own settings</p>
               </div>
               <div class="toggle-row">
                 <div>
@@ -182,7 +179,7 @@
                   <div class="toggle-row-sub">Require manual approval before each commit</div>
                 </div>
                 <label class="switch">
-                  <input id="cfg-hitl" type="checkbox" checked>
+                  <input id="cfg-human-in-the-loop" type="checkbox" checked>
                   <span class="switch-slider"></span>
                 </label>
               </div>
@@ -199,9 +196,9 @@
             </div>
           </div>
 
-        </div>
+        </div><!-- /.settings-grid -->
 
-        <div>
+        <div style="margin-top: var(--space-4);">
           <button id="btn-save-settings" class="btn btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -212,39 +209,25 @@
         </div>
       </section>
 
-      <!-- ══ HISTORY PANEL ══════════════════════════════ -->
+      <!-- HISTORY PANEL -->
       <section id="panel-history" class="section-panel">
         <div class="section-header">
           <div>
             <div class="section-title">Commit History</div>
             <div class="section-sub">All auto-commits recorded locally</div>
           </div>
-          <div style="display:flex;gap:var(--space-2)">
+          <div style="display:flex; gap: var(--space-2); flex-wrap: wrap;">
             <button id="btn-export-csv" class="btn btn-secondary btn-sm">CSV</button>
             <button id="btn-export-json" class="btn btn-secondary btn-sm">JSON</button>
             <button id="btn-clear-history" class="btn btn-danger btn-sm">Clear</button>
           </div>
         </div>
-
         <div class="stats-row">
-          <div class="stat-card">
-            <div id="stat-total" class="stat-value">0</div>
-            <div class="stat-label">Total commits</div>
-          </div>
-          <div class="stat-card">
-            <div id="stat-ai" class="stat-value">0</div>
-            <div class="stat-label">AI-generated</div>
-          </div>
-          <div class="stat-card">
-            <div id="stat-heuristic" class="stat-value">0</div>
-            <div class="stat-label">Heuristic</div>
-          </div>
-          <div class="stat-card">
-            <div id="stat-tokens" class="stat-value">0</div>
-            <div class="stat-label">Est. tokens used</div>
-          </div>
+          <div class="stat-card"><div id="stat-total" class="stat-value">0</div><div class="stat-label">Total commits</div></div>
+          <div class="stat-card"><div id="stat-ai" class="stat-value">0</div><div class="stat-label">AI-generated</div></div>
+          <div class="stat-card"><div id="stat-heuristic" class="stat-value">0</div><div class="stat-label">Heuristic</div></div>
+          <div class="stat-card"><div id="stat-tokens" class="stat-value">0</div><div class="stat-label">Est. tokens used</div></div>
         </div>
-
         <div class="history-filters">
           <select id="history-filter-repo" class="form-select">
             <option value="">All repositories</option>
@@ -254,108 +237,103 @@
             <option value="ai">AI only</option>
             <option value="heuristic">Heuristic only</option>
           </select>
-          <input id="history-search" class="form-input" type="search" placeholder="Search messages…" style="max-width:240px">
         </div>
-
-        <div class="card" style="padding:0;overflow:hidden">
-          <table>
-            <thead>
-              <tr style="border-bottom:1px solid var(--color-divider)">
-                <th style="padding:var(--space-3) var(--space-4);text-align:left;font-size:var(--text-xs);color:var(--color-text-muted)">Date</th>
-                <th style="padding:var(--space-3) var(--space-4);text-align:left;font-size:var(--text-xs);color:var(--color-text-muted)">Repo</th>
-                <th style="padding:var(--space-3) var(--space-4);text-align:left;font-size:var(--text-xs);color:var(--color-text-muted)">Message</th>
-                <th style="padding:var(--space-3) var(--space-4);text-align:left;font-size:var(--text-xs);color:var(--color-text-muted)">Type</th>
-                <th style="padding:var(--space-3) var(--space-4);text-align:left;font-size:var(--text-xs);color:var(--color-text-muted)">Lines</th>
-                <th style="padding:var(--space-3) var(--space-4);text-align:left;font-size:var(--text-xs);color:var(--color-text-muted)">Tokens</th>
-              </tr>
-            </thead>
-            <tbody id="history-tbody">
-              <tr>
-                <td colspan="6" style="text-align:center;padding:var(--space-8);color:var(--color-text-muted)">
-                  Start the timer or commit manually to see history here.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div id="history-list"></div>
+        <div id="history-empty" class="empty-state" style="display:none;">
+          <div class="empty-state-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/>
+            </svg>
+          </div>
+          <h3>No commits yet</h3>
+          <p>Enable a repository and wait for the timer, or commit manually.</p>
         </div>
       </section>
 
     </main>
-  </div><!-- /main-wrap -->
-</div><!-- /app -->
+  </div><!-- /.main-wrap -->
+</div><!-- /#app -->
 
-<!-- ══ MODAL — ADD/EDIT REPO ══════════════════════════════════ -->
-<div id="modal-repo" class="modal-backdrop" style="display:none">
+<!-- MODAL — ADD / EDIT REPO -->
+<div id="modal-repo" class="modal-backdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-repo-title">
     <div class="modal-header">
       <span id="modal-repo-title" class="modal-title">Add Repository</span>
-      <button class="btn-icon" onclick="closeModal('modal-repo')">
+      <button id="btn-close-repo-modal" class="btn-icon" type="button">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="repo-edit-id">
       <div class="form-group">
         <label class="form-label" for="repo-path">Repository path</label>
         <div class="path-picker">
-          <input id="repo-path" class="form-input" type="text" placeholder="Click to browse…" readonly style="cursor:pointer"
-                 onclick="browseFolder()">
-          <button class="btn btn-secondary" id="btn-browse-folder">Browse</button>
+          <input id="repo-path" class="form-input" type="text" placeholder="Click to browse" readonly style="cursor:pointer">
+          <button class="btn btn-secondary" id="btn-browse-repo" type="button">Browse</button>
         </div>
-        <span id="repo-path-status" class="form-hint"></span>
+        <span id="repo-path-hint" class="form-hint"></span>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label class="form-label" for="repo-interval">Interval (min)</label>
           <input id="repo-interval" class="form-input" type="number" min="1" max="1440" value="30">
+          <p class="form-hint">How often to auto-commit</p>
         </div>
         <div class="form-group">
           <label class="form-label" for="repo-cooldown">Cooldown (min)</label>
           <input id="repo-cooldown" class="form-input" type="number" min="0" max="120" value="5">
+          <p class="form-hint">Min. time between commits</p>
         </div>
       </div>
-
       <div class="form-group">
         <label class="form-label" for="repo-prefix">Commit prefix <span style="font-weight:400;text-transform:none">(optional)</span></label>
-        <input id="repo-prefix" class="form-input" type="text" placeholder="e.g. [auto]">
+        <input id="repo-prefix" class="form-input" type="text" placeholder="e.g. auto:">
       </div>
-
       <div class="toggle-row">
         <div>
           <div class="toggle-row-label">Push after commit</div>
         </div>
         <label class="switch">
-          <input id="repo-push" type="checkbox" checked>
+          <input id="repo-push-enabled" type="checkbox" checked>
           <span class="switch-slider"></span>
         </label>
       </div>
-
-      <div class="form-row">
+      <div id="push-branch-group" class="form-row">
         <div class="form-group">
-          <label class="form-label" for="repo-remote">Remote</label>
-          <input id="repo-remote" class="form-input" type="text" placeholder="origin">
+          <label class="form-label" for="repo-push-remote">Remote</label>
+          <input id="repo-push-remote" class="form-input" type="text" placeholder="origin">
+          <span id="push-branch-hint" class="form-hint"></span>
         </div>
         <div class="form-group">
-          <label class="form-label" for="repo-branch">Branch</label>
-          <input id="repo-branch" class="form-input" type="text" placeholder="main">
+          <label class="form-label" for="repo-push-branch">Branch</label>
+          <input id="repo-push-branch" class="form-input" type="text" placeholder="main">
         </div>
+      </div>
+      <div id="repo-preview" style="display:none;" class="form-group">
+        <label class="form-label">Diff preview</label>
+        <div id="repo-diff-preview" class="dry-run-box"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modal-repo')">Cancel</button>
-      <button id="btn-save-repo" class="btn btn-primary">Add repository</button>
+      <button id="btn-cancel-repo-modal" class="btn btn-secondary" type="button">Cancel</button>
+      <button id="btn-save-repo" class="btn btn-primary" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add repository
+      </button>
     </div>
   </div>
 </div>
 
-<!-- ══ MODAL — DRY RUN ════════════════════════════════════════ -->
-<div id="modal-dry-run" class="modal-backdrop" style="display:none">
+<!-- MODAL — DRY RUN -->
+<div id="modal-dryrun" class="modal-backdrop">
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
-      <span class="modal-title">Dry run — preview commit</span>
-      <button class="btn-icon" onclick="closeModal('modal-dry-run')">
+      <span class="modal-title">Dry run preview commit</span>
+      <button id="btn-close-dryrun-modal" class="btn-icon" type="button">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
@@ -364,25 +342,31 @@
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Generated message</label>
-        <div id="dry-run-message" class="dry-run-box">—</div>
+        <div id="dryrun-result" class="dry-run-box"></div>
       </div>
-      <div class="form-group">
+      <div id="dryrun-diff" class="form-group" style="display:none;">
         <label class="form-label">Diff stats</label>
-        <div id="dry-run-stats" class="diff-info" style="padding:var(--space-2) 0"></div>
+        <div id="dryrun-diff-info" class="diff-info" style="padding: var(--space-2) 0;"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modal-dry-run')">Close</button>
+      <button id="btn-cancel-dryrun" class="btn btn-secondary" type="button">Close</button>
+      <button id="btn-commit-from-dry" class="btn btn-primary" type="button">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Commit now
+      </button>
     </div>
   </div>
 </div>
 
-<!-- ══ MODAL — HUMAN IN THE LOOP ══════════════════════════════ -->
-<div id="modal-approval" class="modal-backdrop" style="display:none">
-  <div class="modal" style="width:min(600px,95vw)" role="dialog" aria-modal="true">
+<!-- MODAL — HUMAN IN THE LOOP -->
+<div id="modal-approval" class="modal-backdrop">
+  <div class="modal" style="width:min(600px,95vw);" role="dialog" aria-modal="true">
     <div class="modal-header">
       <span class="modal-title">Review commit</span>
-      <button class="btn-icon" onclick="discardApproval()">
+      <button id="btn-close-approval-modal" class="btn-icon" type="button">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
@@ -392,20 +376,22 @@
       <div class="form-group">
         <label class="form-label" for="approval-message">Commit message</label>
         <textarea id="approval-message" class="form-input" rows="3"
-                  style="resize:vertical;font-family:ui-monospace,'Cascadia Code',monospace"></textarea>
+                  style="resize:vertical;font-family:ui-monospace,'Cascadia Code',monospace;"></textarea>
       </div>
       <div class="form-group">
         <label class="form-label">Diff summary</label>
-        <div id="approval-stats" class="diff-info" style="padding:var(--space-2) 0;font-size:var(--text-xs);color:var(--color-text-muted)"></div>
+        <div id="approval-diff-info" class="diff-info"
+             style="padding: var(--space-2) 0; font-size: var(--text-xs); color: var(--color-text-muted);"></div>
       </div>
-      <div class="form-group">
+      <div id="approval-files-section" class="form-group" style="display:none;">
         <label class="form-label">Changed files</label>
-        <div id="approval-files" style="display:flex;flex-direction:column;gap:var(--space-1);max-height:120px;overflow-y:auto"></div>
+        <div id="approval-files-list"
+             style="display:flex;flex-direction:column;gap:var(--space-1);max-height:120px;overflow-y:auto;"></div>
       </div>
-      <div class="form-group">
+      <div id="approval-diff-section" class="form-group" style="display:none;">
         <label class="form-label">Diff preview</label>
         <pre id="approval-diff-preview" class="dry-run-box"
-             style="font-size:var(--text-xs);max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
+             style="font-size:var(--text-xs);max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;"></pre>
       </div>
       <div class="toggle-row">
         <div>
@@ -413,15 +399,15 @@
           <div class="toggle-row-sub">Uses repo's configured remote and branch</div>
         </div>
         <label class="switch">
-          <input id="approval-push" type="checkbox" checked>
+          <input id="approval-push-enabled" type="checkbox" checked>
           <span class="switch-slider"></span>
         </label>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="btn-discard-approval">Discard</button>
-      <button class="btn btn-primary" id="btn-confirm-approval">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button id="btn-cancel-approval" class="btn btn-secondary" type="button">Discard</button>
+      <button id="btn-confirm-approval" class="btn btn-primary" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
         Confirm &amp; Commit
@@ -430,7 +416,7 @@
   </div>
 </div>
 
-<!-- ── TOASTS ──────────────────────────────────────────────── -->
+<!-- TOASTS -->
 <div id="toast-container" aria-live="polite"></div>
 
 <script src="app.js"></script>

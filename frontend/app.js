@@ -92,11 +92,11 @@ async function toggleTimer() {
 }
 function setTimerState(running) {
     timerRunning = running;
-    document.getElementById('timer-dot').classList.toggle('running', running);
-    document.getElementById('timer-status-text').textContent = running ? 'Running' : 'Stopped';
-    document.getElementById('btn-start-stop').innerHTML = running
-        ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
-        : '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start';
+    // document.getElementById('timer-dot').classList.toggle('running', running);
+    // document.getElementById('timer-status-text').textContent = running ? 'Running' : 'Stopped';
+    // document.getElementById('btn-start-stop').innerHTML = running
+    //     ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop'
+    //     : '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start';
 }
 
 /* ── BACKEND EVENTS ───────────────────────────────────────── */
@@ -126,18 +126,45 @@ async function loadRepos() {
 }
 
 function renderRepos() {
-    const grid  = document.getElementById('repos-grid');
-    const empty = document.getElementById('repos-empty');
-    const sub   = document.getElementById('repos-count-sub');
+    const grid = document.getElementById('repos-grid');
+    const sub  = document.getElementById('repos-count-sub');
+    if (!grid) return;
+
+    // Buscar o crear el empty-state
+    let empty = document.getElementById('repos-empty');
+    if (!empty) {
+        empty = document.createElement('div');
+        empty.id = 'repos-empty';
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+      <div class="empty-state-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/>
+        </svg>
+      </div>
+      <h3>No repositories yet</h3>
+      <p>Add a Git repository to start automating commits with AI-generated messages.</p>
+      <button id="btn-add-repo-empty" class="btn btn-primary">Add repository</button>
+    `;
+    }
+
+    // Extraerlo del DOM antes de limpiar
+    if (empty.parentNode === grid) grid.removeChild(empty);
+
     if (!repos.length) {
         grid.innerHTML = '';
         grid.appendChild(empty);
         empty.style.display = '';
-        sub.textContent = 'No repositories configured';
+        if (sub) sub.textContent = 'No repositories configured';
+        // Re-enlazar el botón del empty state
+        document.getElementById('btn-add-repo-empty')
+            ?.addEventListener('click', openAddRepoModal);
         return;
     }
+
     empty.style.display = 'none';
-    sub.textContent = `${repos.length} repositor${repos.length === 1 ? 'y' : 'ies'} configured`;
+    if (sub) sub.textContent = `${repos.length} repositor${repos.length === 1 ? 'y' : 'ies'} configured`;
+
     grid.innerHTML = repos.map(repo => {
         const parts    = repo.path.replace(/\\/g, '/').split('/');
         const repoName = parts.pop();
@@ -218,7 +245,7 @@ function setupRepoDelegation() {
         if (delBtn)    { deleteRepo(delBtn.dataset.id); closeDropdown(delBtn.dataset.id); return; }
         if (commitBtn) { commitNow(commitBtn.dataset.id, commitBtn.dataset.path); return; }
         if (dryBtn)    { openDryRun(dryBtn.dataset.path); return; }
-        if (diffBtn)   { previewDiff(diffBtn.dataset.path, diffBtn.dataset.target); return; }
+        if (diffBtn)   { previewDiff(diffBtn.dataset.path, diffBtn.dataset.target);  }
     });
 }
 
@@ -333,18 +360,21 @@ function openEditRepoModal(id) {
     if (!repo) return;
     editingRepoId = id;
     document.getElementById('modal-repo-title').textContent = 'Edit repository';
-    document.getElementById('btn-save-repo').innerHTML =
-        `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save changes`;
-    document.getElementById('repo-edit-id').value      = id;
-    document.getElementById('repo-path').value         = repo.path;
-    document.getElementById('repo-interval').value     = repo.interval_minutes;
-    document.getElementById('repo-cooldown').value     = repo.cooldown_minutes;
-    document.getElementById('repo-prefix').value       = repo.commit_prefix;
-    document.getElementById('repo-push-enabled').checked = repo.push_enabled;
-    document.getElementById('repo-push-remote').value  = repo.push_remote || 'origin';
-    document.getElementById('repo-push-branch').value  = repo.push_branch || 'main';
+    document.getElementById('btn-save-repo').innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+      <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+    </svg> Save changes`;
+    document.getElementById('repo-edit-id').value           = id;
+    document.getElementById('repo-path').value              = repo.path;
+    document.getElementById('repo-interval').value          = repo.interval_minutes;
+    document.getElementById('repo-cooldown').value          = repo.cooldown_minutes;
+    document.getElementById('repo-prefix').value            = repo.commit_prefix;
+    document.getElementById('repo-push-enabled').checked   = repo.push_enabled;
+    document.getElementById('repo-push-remote').value       = repo.push_remote || 'origin';
+    document.getElementById('repo-push-branch').value       = repo.push_branch || 'main';
     document.getElementById('push-branch-group').style.display = repo.push_enabled ? '' : 'none';
-    document.getElementById('repo-preview').style.display = 'none';
+    document.getElementById('repo-preview').style.display   = 'none';
     loadBranchOptions(repo.path);
     document.getElementById('modal-repo').classList.add('open');
 }
@@ -407,18 +437,28 @@ function togglePushBranch() {
 async function saveRepo() {
     const path = document.getElementById('repo-path').value.trim();
     if (!path) { toast('Please select a repository path', 'error'); return; }
-    const interval    = parseInt(document.getElementById('repo-interval').value)   || 30;
-    const cooldown    = parseInt(document.getElementById('repo-cooldown').value)    || 0;
+
+    const interval    = parseInt(document.getElementById('repo-interval').value) || 30;
+    const cooldown    = parseInt(document.getElementById('repo-cooldown').value) || 0;
     const prefix      = document.getElementById('repo-prefix').value.trim();
     const pushEnabled = document.getElementById('repo-push-enabled').checked;
     const pushRemote  = document.getElementById('repo-push-remote').value.trim() || 'origin';
     const pushBranch  = document.getElementById('repo-push-branch').value.trim() || 'main';
+
     const repoObj = {
-        id: editingRepoId || crypto.randomUUID(),
-        path, interval_minutes: interval, enabled: true,
-        push_enabled: pushEnabled, push_remote: pushRemote, push_branch: pushBranch,
-        commit_prefix: prefix, last_commit_time: 0, cooldown_minutes: cooldown,
+        id:               editingRepoId || crypto.randomUUID(),
+        path,
+        interval_minutes: interval,
+        timer_enabled:    false,
+        enabled:          true,
+        push_enabled:     pushEnabled,
+        push_remote:      pushRemote,
+        push_branch:      pushBranch,
+        commit_prefix:    prefix,
+        last_commit_time: 0,
+        cooldown_minutes: cooldown,
     };
+
     try {
         if (editingRepoId) {
             repoObj.enabled          = repos.find(r => r.id === editingRepoId)?.enabled ?? true;
@@ -433,7 +473,6 @@ async function saveRepo() {
         loadRepos();
     } catch (e) { toast('Failed to save: ' + e, 'error'); }
 }
-
 /* ── DRY RUN MODAL ────────────────────────────────────────── */
 let dryRunPath = '';
 function openDryRun(path) {
@@ -487,14 +526,16 @@ async function loadSettings() {
     try {
         const cfg = await invoke('load_config_from_file');
         if (!cfg) return;
+
         const sel = document.getElementById('cfg-provider');
         if (sel) sel.value = cfg.provider || 'lmstudio';
-        document.getElementById('cfg-base-url').value  = cfg.llm_base_url   || '';
-        document.getElementById('cfg-model').value     = cfg.llm_model_name || '';
-        document.getElementById('cfg-threshold').value = cfg.smart_threshold_lines || 10;
-        document.getElementById('cfg-interval').value  = cfg.interval_minutes || 30;
-        document.getElementById('cfg-auto-start').checked = !!cfg.auto_start;
-        // ← CORREGIDO: cargar human_in_the_loop
+
+        document.getElementById('cfg-base-url').value         = cfg.llm_base_url    || '';
+        document.getElementById('cfg-model').value            = cfg.llm_model_name  || '';
+        document.getElementById('cfg-threshold').value        = cfg.smart_threshold_lines || 10;
+        document.getElementById('cfg-auto-start').checked     = !!cfg.auto_start;
+
+        // Human in the loop
         humanInTheLoop = cfg.human_in_the_loop !== undefined ? cfg.human_in_the_loop : true;
         const hitlEl = document.getElementById('cfg-human-in-the-loop');
         if (hitlEl) hitlEl.checked = humanInTheLoop;
@@ -503,11 +544,15 @@ async function loadSettings() {
         if (maskedKey && maskedKey !== 'sk-...') {
             document.getElementById('cfg-api-key').placeholder = maskedKey;
         }
+
         setSmartMode(cfg.smart_mode || 'smart');
+
         if (cfg.auto_start) {
             try { await invoke('start_auto_commit'); setTimerState(true); } catch (e) {}
         }
-    } catch (e) { console.error('loadSettings', e); }
+    } catch (e) {
+        console.error('loadSettings', e);
+    }
 }
 
 async function onProviderChange() {
@@ -573,14 +618,26 @@ async function saveSettings() {
     humanInTheLoop  = humanItl;
 
     const cfg = {
-        repopath: '', auto_commit_enabled: false,
-        interval_minutes: interval, auto_start: autoStart,
-        provider, llm_base_url: baseUrl, llm_model_name: model, llm_api_key: apiKey,
-        smart_mode: smartMode, smart_threshold_lines: threshold,
-        push_enabled: true, push_remote: 'origin', push_branch: 'main',
-        commit_prefix: '', cooldown_minutes: 5,
-        human_in_the_loop: humanItl,   // ← CORREGIDO
-        last_successful_commit: 0, repos: [], commit_history: [],
+        repo_path:             '',
+        auto_commit_enabled:   false,
+        interval_minutes:      interval,
+        auto_start:            autoStart,
+        provider,
+        llm_base_url:          baseUrl,
+        llm_model_name:        model,
+        llm_api_key:           apiKey,
+        smart_mode:            smartMode,
+        smart_threshold_lines: threshold,
+        human_in_the_loop:     humanItl,
+        // Campos legado — se mantienen por compatibilidad con AppConfig pero no se usan
+        push_enabled:   true,
+        push_remote:    'origin',
+        push_branch:    'main',
+        commit_prefix:  '',
+        cooldown_minutes: 0,
+        last_successful_commit: 0,
+        repos:          [],
+        commit_history: [],
     };
     try {
         await invoke('save_config', { config: cfg });
@@ -756,7 +813,7 @@ async function confirmApproval() {
         const result = await invoke('confirm_commit', {
             path: approvalPath,
             message,
-            pushenabled: pushEnabled,
+            pushenabled: Boolean(pushEnabled),
         });
         closeApprovalModal();
         toast(`Committed: ${result.message}`, 'success', 5000);
@@ -794,7 +851,7 @@ async function init() {
     document.querySelectorAll('.nav-item').forEach(item =>
         item.addEventListener('click', () => navigateTo(item.dataset.section)));
 
-    document.getElementById('btn-start-stop').addEventListener('click', toggleTimer);
+    // document.getElementById('btn-start-stop').addEventListener('click', toggleTimer);
     document.getElementById('btn-add-repo').addEventListener('click', openAddRepoModal);
     document.getElementById('btn-add-repo-empty').addEventListener('click', openAddRepoModal);
     document.getElementById('btn-close-repo-modal').addEventListener('click', closeRepoModal);

@@ -16,16 +16,25 @@ pub async fn run_commit(
     path: String,
     state: State<'_, AppState>,
 ) -> Result<CommitResult> {
-    let (provider, base_url, model, api_key, smart_mode, threshold,
-        push_enabled, push_remote, push_branch, commit_prefix,
-        cooldown, last_commit, hitl) = {
+    let (provider, base_url, model, api_key, smart_mode, threshold, hitl,
+        push_enabled, push_remote, push_branch, commit_prefix, cooldown, last_commit) = {
         let c = state.config.lock().map_err(|e| e.to_string())?;
+        // Buscar el repo concreto por path, si no existe usar globales
+        let repo = c.repos.iter().find(|r| r.path == path);
         (
-            c.provider.clone(), c.llm_base_url.clone(), c.llm_model_name.clone(),
-            c.llm_api_key.clone(), c.smart_mode.clone(), c.smart_threshold_lines,
-            c.push_enabled, c.push_remote.clone(), c.push_branch.clone(),
-            c.commit_prefix.clone(), c.cooldown_minutes,
-            c.last_successful_commit, c.human_in_the_loop,
+            c.provider.clone(),
+            c.llm_base_url.clone(),
+            c.llm_model_name.clone(),
+            c.llm_api_key.clone(),
+            c.smart_mode.clone(),
+            c.smart_threshold_lines,
+            c.human_in_the_loop,
+            repo.map(|r| r.push_enabled).unwrap_or(c.push_enabled),
+            repo.map(|r| r.push_remote.clone()).unwrap_or(c.push_remote.clone()),
+            repo.map(|r| r.push_branch.clone()).unwrap_or(c.push_branch.clone()),
+            repo.map(|r| r.commit_prefix.clone()).unwrap_or(c.commit_prefix.clone()),
+            repo.map(|r| r.cooldown_minutes).unwrap_or(c.cooldown_minutes),
+            repo.map(|r| r.last_commit_time).unwrap_or(c.last_successful_commit),
         )
     };
 
@@ -43,12 +52,16 @@ pub async fn run_commit(
             files_changed: 0, insertions: 0, deletions: 0, estimated_tokens: 0,
         });
         let entry = CommitHistoryEntry {
-            timestamp: now_unix(), repo_path: path,
+            timestamp: now_unix(), repo_path: path.clone(),
             message: result.message.clone(), used_llm: result.used_llm,
             files_changed: stats.files_changed, insertions: stats.insertions,
             deletions: stats.deletions, estimated_tokens: stats.estimated_tokens,
         };
         let mut c = state.config.lock().map_err(|e| e.to_string())?;
+        // Actualizar last_commit_time del repo específico
+        if let Some(r) = c.repos.iter_mut().find(|r| r.path == path) {
+            r.last_commit_time = now_unix();
+        }
         push_history(&mut c, entry);
     }
     Ok(result)
@@ -61,9 +74,14 @@ pub async fn confirm_commit(
     push_enabled: bool,
     state: State<'_, AppState>,
 ) -> Result<CommitResult> {
+    // Leer remote/branch del repo específico
     let (push_remote, push_branch) = {
         let c = state.config.lock().map_err(|e| e.to_string())?;
-        (c.push_remote.clone(), c.push_branch.clone())
+        let repo = c.repos.iter().find(|r| r.path == path);
+        (
+            repo.map(|r| r.push_remote.clone()).unwrap_or(c.push_remote.clone()),
+            repo.map(|r| r.push_branch.clone()).unwrap_or(c.push_branch.clone()),
+        )
     };
 
     Command::new("git").args(["add", "."]).current_dir(&path)
@@ -81,19 +99,17 @@ pub async fn confirm_commit(
     }
 
     let entry = CommitHistoryEntry {
-        timestamp: now_unix(), repo_path: path,
+        timestamp: now_unix(), repo_path: path.clone(),
         message: message.clone(), used_llm: false,
         files_changed: 0, insertions: 0, deletions: 0, estimated_tokens: 0,
     };
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
+    if let Some(r) = c.repos.iter_mut().find(|r| r.path == path) {
+        r.last_commit_time = now_unix();
+    }
     push_history(&mut c, entry);
 
-    Ok(CommitResult {
-        message,
-        used_llm: false,
-        diff_stats: None,
-        pending_approval: None,
-    })
+    Ok(CommitResult { message, used_llm: false, diff_stats: None, pending_approval: None })
 }
 
 #[tauri::command]

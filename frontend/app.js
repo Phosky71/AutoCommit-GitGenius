@@ -441,7 +441,7 @@ async function saveRepo() {
     const interval    = parseInt(document.getElementById('repo-interval').value) || 30;
     const cooldown    = parseInt(document.getElementById('repo-cooldown').value) || 0;
     const prefix      = document.getElementById('repo-prefix').value.trim();
-    const pushEnabled = document.getElementById('repo-push-enabled').checked;
+    const push_enabled = document.getElementById('repo-push-enabled').checked;
     const pushRemote  = document.getElementById('repo-push-remote').value.trim() || 'origin';
     const pushBranch  = document.getElementById('repo-push-branch').value.trim() || 'main';
 
@@ -451,7 +451,7 @@ async function saveRepo() {
         interval_minutes: interval,
         timer_enabled:    false,
         enabled:          true,
-        push_enabled:     pushEnabled,
+        push_enabled:     push_enabled,
         push_remote:      pushRemote,
         push_branch:      pushBranch,
         commit_prefix:    prefix,
@@ -593,7 +593,7 @@ async function testConnection() {
     btn.innerHTML  = '<span class="spin"></span>';
     result.style.display = 'none';
     try {
-        await invoke('test_connection', { provider, baseurl: baseUrl, model, apikey: apiKey });
+        await invoke('test_connection', { provider, base_url: baseUrl, model, api_key: apiKey });
         result.style.display = '';
         result.innerHTML = '<span class="test-status ok">Connection successful</span>';
     } catch (e) {
@@ -611,7 +611,7 @@ async function saveSettings() {
     const model     = document.getElementById('cfg-model').value.trim();
     const apiKey    = document.getElementById('cfg-api-key').value.trim();
     const threshold = parseInt(document.getElementById('cfg-threshold').value) || 10;
-    const interval  = parseInt(document.getElementById('cfg-interval').value)  || 30;
+    const interval  = 30;
     const autoStart = document.getElementById('cfg-auto-start').checked;
     // ← CORREGIDO: leer y guardar human_in_the_loop
     const humanItl  = document.getElementById('cfg-human-in-the-loop')?.checked ?? true;
@@ -803,7 +803,7 @@ function closeApprovalModal() {
 
 async function confirmApproval() {
     const message     = document.getElementById('approval-message').value.trim();
-    const pushEnabled = document.getElementById('approval-push-enabled').checked;
+    const push_enabled = document.getElementById('approval-push-enabled').checked;
     if (!message) { toast('Commit message cannot be empty', 'error'); return; }
 
     const btn = document.getElementById('btn-confirm-approval');
@@ -813,7 +813,7 @@ async function confirmApproval() {
         const result = await invoke('confirm_commit', {
             path: approvalPath,
             message,
-            pushenabled: Boolean(pushEnabled),
+            pushEnabled: Boolean(push_enabled),
         });
         closeApprovalModal();
         toast(`Committed: ${result.message}`, 'success', 5000);
@@ -851,7 +851,6 @@ async function init() {
     document.querySelectorAll('.nav-item').forEach(item =>
         item.addEventListener('click', () => navigateTo(item.dataset.section)));
 
-    // document.getElementById('btn-start-stop').addEventListener('click', toggleTimer);
     document.getElementById('btn-add-repo').addEventListener('click', openAddRepoModal);
     document.getElementById('btn-add-repo-empty').addEventListener('click', openAddRepoModal);
     document.getElementById('btn-close-repo-modal').addEventListener('click', closeRepoModal);

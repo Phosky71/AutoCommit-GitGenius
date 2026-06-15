@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
 use tokio::time::{interval, Duration};
+use tauri::Manager;
 
 use crate::config::{AppState, CommitHistoryEntry, DiffStatsPublic, Result, now_unix, push_history};
 use crate::git::run_commit_internal;
@@ -73,13 +74,18 @@ pub async fn start_auto_commit(
                     &commit_prefix, cooldown, last_commit, false, hitl,
                 ).await {
                     Ok(r) => {
-                        // 1. ¿Ignoramos este intento por completo? Solo si no hay cambios o hay cooldown
                         let is_empty = r.message == "No changes to commit"
                             || r.message.starts_with("Cooldown");
 
                         if !is_empty {
-                            // 2. Si NO requiere aprobación, lo guardamos ya en el historial y reseteamos el tiempo
-                            if r.pending_approval.is_none() {
+                            if r.pending_approval.is_some() {
+                                // ← AÑADIDO: Traer la ventana a primer plano y desminimizar
+                                if let Some(window) = app_handle.get_webview_window("main") {
+                                    let _ = window.unminimize();
+                                    let _ = window.set_focus();
+                                }
+                            } else {
+                                // Flujo normal sin HITL: guardar historial
                                 let stats = r.diff_stats.clone().unwrap_or(DiffStatsPublic {
                                     files_changed: 0, insertions: 0,
                                     deletions: 0, estimated_tokens: 0,
@@ -103,7 +109,6 @@ pub async fn start_auto_commit(
                             }
 
                             // 3. SIEMPRE enviamos el evento a la UI.
-                            // Si tiene pending_approval, el JS lo capturará y abrirá el modal.
                             let _ = app_handle.emit("commit-status", &r);
                         }
                     }

@@ -802,6 +802,7 @@ function openApprovalModal(path, pending) {
     approvalUsedLlm = pending.used_llm;
     document.getElementById('approval-message').value        = pending.message || '';
     document.getElementById('approval-push-enabled').checked = true;
+    document.getElementById('approval-tag').value            = '';
 
     const s = pending.diff_stats;
     if (s) {
@@ -841,6 +842,7 @@ function closeApprovalModal() {
 async function confirmApproval() {
     const message     = document.getElementById('approval-message').value.trim();
     const push_enabled = document.getElementById('approval-push-enabled').checked;
+    const tag         = document.getElementById('approval-tag').value.trim();
     if (!message) { toast('Commit message cannot be empty', 'error'); return; }
 
     const btn = document.getElementById('btn-confirm-approval');
@@ -851,7 +853,8 @@ async function confirmApproval() {
             path: approvalPath,
             message,
             pushEnabled: Boolean(push_enabled),
-            usedLlm: approvalUsedLlm
+            usedLlm: approvalUsedLlm,
+            tag: tag ? tag : null
         });
         closeApprovalModal();
         toast(`Committed: ${result.message}`, 'success', 5000);

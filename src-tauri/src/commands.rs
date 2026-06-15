@@ -107,6 +107,7 @@ pub async fn confirm_commit(
     message: String,
     push_enabled: bool,
     used_llm: bool,
+    tag: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<CommitResult> {
     // Leer remote/branch del repo específico
@@ -133,12 +134,28 @@ pub async fn confirm_commit(
         .status()
         .map_err(|e| format!("Git commit error: {}", e))?;
 
+    if let Some(t) = &tag {
+        Command::new("git")
+            .args(["tag", t])
+            .current_dir(&path)
+            .status()
+            .map_err(|e| format!("Git tag error: {}", e))?;
+    }
+
     if push_enabled {
         Command::new("git")
             .args(["push", &push_remote, &push_branch])
             .current_dir(&path)
             .status()
             .map_err(|e| format!("Git push error: {}", e))?;
+    }
+
+    if let Some(t) = &tag {
+        Command::new("git")
+            .args(["push", &push_remote, t])
+            .current_dir(&path)
+            .status()
+            .map_err(|e| format!("Git push tag error: {}", e))?;
     }
 
     let entry = CommitHistoryEntry {

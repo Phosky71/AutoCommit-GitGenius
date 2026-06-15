@@ -1,0 +1,49 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*' # Se ejecutará automáticamente cuando subas un tag que empiece por 'v' (ej. v1.0.0)
+  workflow_dispatch: # Te permite ejecutarlo manualmente desde la web de GitHub
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write # Permiso crucial para que el bot pueda crear el Release
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        # IMPORTANTE: Cambia "npm install" por "yarn install" o "pnpm install" si usas otro gestor.
+        run: npm install
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build and Publish Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'AutoCommit ${{ github.ref_name }}'
+          releaseBody: 'Revisa el código fuente y las notas de la versión.'
+          releaseDraft: true # Lo crea como borrador para que tú lo revises antes de publicarlo
+          prerelease: false

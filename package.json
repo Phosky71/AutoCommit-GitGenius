@@ -1,0 +1,21 @@
+{
+  "name": "autocommit-gitgenius",
+  "version": "1.0.0",
+  "description": "AutoCommit con IA impulsado por Tauri",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  },
+  "keywords": [
+    "tauri",
+    "git",
+    "autocommit"
+  ],
+  "author": "",
+  "license": "MIT"
+}

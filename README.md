@@ -2,21 +2,29 @@
 
 <div align="center">
 
-**Open-source desktop app by [Operia Systems](https://operiasystems.com) for automating Git commits with configurable local or cloud LLMs.**
+<img src="docs/screenshot-placeholder-main.png" alt="AutoCommit GitGenius – main view" width="800">
+<!-- Replace with your actual screenshot -->
+
+**Open-source desktop application by [Operia Systems](https://operiasystems.com) for automating Git commits using configurable local or cloud LLMs.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Built with Tauri](https://img.shields.io/badge/Built%20with-Tauri%20v2-24C8D8?logo=tauri)](https://tauri.app)
 [![Rust](https://img.shields.io/badge/Backend-Rust-orange?logo=rust)](https://www.rust-lang.org)
-[![Release](https://img.shields.io/github/v/release/Phosky71/AutoCommit-GitGenius)](https://github.com/Phosky71/AutoCommit-GitGenius/releases)
+[![Latest Release](https://img.shields.io/github/v/release/Phosky71/AutoCommit-GitGenius?label=release)](https://github.com/Phosky71/AutoCommit-GitGenius/releases/latest)
+[![Operia Systems](https://img.shields.io/badge/by-Operia%20Systems-6C5DD3)](https://operiasystems.com)
+
+**[⬇ Download for Windows](#download) · [⬇ Download for macOS](#download) · [operiasystems.com](https://operiasystems.com)**
 
 </div>
 
 ---
 
-## Table of contents
+## Table of Contents
 
 - [English](#english)
+  - [About Operia Systems](#about-operia-systems)
   - [Overview](#overview)
+  - [Download](#download)
   - [Why this project exists](#why-this-project-exists)
   - [Current scope](#current-scope)
   - [Key features](#key-features)
@@ -26,17 +34,17 @@
   - [Architecture](#architecture)
   - [Tech stack](#tech-stack)
   - [Requirements](#requirements)
-  - [Installation](#installation)
-  - [Development](#development)
+  - [Installation and development](#installation-and-development)
   - [Build and releases](#build-and-releases)
   - [Configuration and local storage](#configuration-and-local-storage)
   - [Project structure](#project-structure)
-  - [Roadmap and known issues](#roadmap-and-known-issues)
+  - [Known issues and roadmap](#known-issues-and-roadmap)
   - [Contributing](#contributing)
   - [License](#license)
-  - [About Operia Systems](#about-operia-systems)
 - [Español](#español)
+  - [Sobre Operia Systems](#sobre-operia-systems)
   - [Resumen](#resumen)
+  - [Descarga](#descarga)
   - [Por qué existe este proyecto](#por-qué-existe-este-proyecto)
   - [Alcance actual](#alcance-actual)
   - [Funcionalidades principales](#funcionalidades-principales)
@@ -46,168 +54,190 @@
   - [Arquitectura](#arquitectura)
   - [Stack tecnológico](#stack-tecnológico)
   - [Requisitos](#requisitos)
-  - [Instalación](#instalación)
-  - [Desarrollo](#desarrollo)
+  - [Instalación y desarrollo](#instalación-y-desarrollo)
   - [Build y releases](#build-y-releases)
   - [Configuración y almacenamiento local](#configuración-y-almacenamiento-local)
   - [Estructura del proyecto](#estructura-del-proyecto)
-  - [Hoja de ruta y problemas conocidos](#hoja-de-ruta-y-problemas-conocidos)
+  - [Problemas conocidos y hoja de ruta](#problemas-conocidos-y-hoja-de-ruta)
   - [Contribuir](#contribuir)
   - [Licencia](#licencia-1)
-  - [Sobre Operia Systems](#sobre-operia-systems)
 
 ---
 
 # English
 
+## About Operia Systems
+
+AutoCommit GitGenius is an open-source project developed and maintained by **[Operia Systems](https://operiasystems.com)**, a software business focused on building practical tools for developers and teams.
+
+This project reflects the Operia Systems approach: lightweight products, honest automation, and real-world developer workflows. It is released under the MIT License so that anyone can use it, improve it, and build on top of it.
+
+> **License:** MIT — Copyright © 2026 Operia Systems. See [LICENSE](LICENSE) for the full text.
+
+---
+
 ## Overview
 
 AutoCommit GitGenius is an open-source desktop application built with **Tauri v2**, a **Rust** backend, and a lightweight **HTML/CSS/JavaScript** frontend.
 
-Its purpose is to reduce the friction of repetitive Git commits by detecting repository changes, generating commit messages, and optionally pushing updates to a configured remote branch.
+It automates Git commits by watching your repositories for changes, analyzing diffs, generating commit messages with a configurable LLM, and optionally pushing changes to a remote branch — all without leaving your workflow.
 
-The project comes from **Operia Systems** and is intended as a practical developer productivity tool rather than a full Git replacement.
+The application supports **multiple repositories simultaneously**, each with its own interval, cooldown, prefix, and push settings. It works with local LLM providers such as LM Studio and Ollama, as well as cloud providers such as OpenAI, Gemini, Groq, Anthropic, Mistral, Together, and OpenRouter.
+
+---
+
+## Download
+
+The latest release is **v1.0.7**, available for Windows and macOS:
+
+| Platform | File | Size |
+|---|---|---|
+| macOS (Apple Silicon) | [AutoCommit_1.0.6_aarch64.dmg](https://github.com/Phosky71/AutoCommit-GitGenius/releases/download/v1.0.7/AutoCommit_1.0.6_aarch64.dmg) | 8.33 MB |
+| macOS (app bundle) | [AutoCommit_aarch64.app.tar.gz](https://github.com/Phosky71/AutoCommit-GitGenius/releases/download/v1.0.7/AutoCommit_aarch64.app.tar.gz) | 8.25 MB |
+| Windows (installer) | [AutoCommit_1.0.6_x64-setup.exe](https://github.com/Phosky71/AutoCommit-GitGenius/releases/download/v1.0.7/AutoCommit_1.0.6_x64-setup.exe) | 5.09 MB |
+| Windows (MSI) | [AutoCommit_1.0.6_x64_en-US.msi](https://github.com/Phosky71/AutoCommit-GitGenius/releases/download/v1.0.7/AutoCommit_1.0.6_x64_en-US.msi) | 7.74 MB |
+
+> **Note:** The release tag is `v1.0.7` but the binary filenames still show `1.0.6` due to a version bump in the tag that was not reflected in `tauri.conf.json` before building. This will be corrected in the next release.
+
+[→ All releases](https://github.com/Phosky71/AutoCommit-GitGenius/releases)
 
 ---
 
 ## Why this project exists
 
-Many developers work in short iterative cycles and often postpone commits because stopping to summarize changes feels like overhead.
+Many developers work in short iterative cycles and frequently postpone commits because stopping to write a meaningful summary breaks concentration.
 
-AutoCommit GitGenius aims to make that workflow smoother by helping with commit generation while still giving the user control over when and how commits are created.
+AutoCommit GitGenius was created to reduce that friction. Instead of demanding full attention for every commit, it detects what changed, generates a structured message, and asks for confirmation only when the user explicitly wants it.
 
-It is especially useful in local-first setups where developers want to combine Git automation with local LLMs such as LM Studio or Ollama, while still keeping cloud provider support available when needed.
+It is especially useful in local-first setups where developers want Git automation without sending code to external services. With LM Studio or Ollama, the entire process runs entirely offline.
 
 ---
 
 ## Current scope
 
-AutoCommit GitGenius is focused on **commit automation**, not on replacing Git clients or full repository hosting workflows.
+AutoCommit GitGenius is focused on **commit automation**. It is not a Git GUI client, a branch management suite, or a merge conflict resolver.
 
-Today, the project is designed around:
+**What it does today:**
 
-- Monitoring local Git repositories.
-- Detecting changed files and analyzing diffs.
-- Generating commit messages using either heuristics or a configurable LLM.
-- Optionally requiring manual approval before creating the final commit.
-- Optionally pushing commits to a configured remote and branch.
-- Storing local commit history for later review and export.
+- Monitors local Git repositories for changes.
+- Analyzes diffs and generates commit messages using heuristics or a configured LLM.
+- Runs commit checks on a configurable schedule per repository.
+- Optionally requires manual approval before creating the final commit.
+- Optionally pushes to a configured remote and branch.
+- Stores a local history of generated commits.
 
-What it is **not**:
+**What it does not do:**
 
-- A full Git GUI client.
-- A merge conflict resolution tool.
-- A repository hosting platform.
-- A complete branch orchestration system.
+- Branch switching or merging.
+- Remote repository management.
+- Conflict resolution.
+- Full Git history visualization.
 
 ---
 
 ## Key features
 
-### Multi-repository management
+### Multi-repository support
 
-The application supports multiple Git repositories, each with its own local settings.
+Each repository tracked by the application has its own independent settings:
 
-Each repository can store:
-
-- Commit interval in minutes.
-- Cooldown time between commits.
-- Commit prefix.
+- Commit interval (in minutes).
+- Cooldown between consecutive commits (in minutes).
+- Custom commit prefix.
 - Push enabled or disabled.
-- Push remote.
-- Push branch.
-- Enabled state.
+- Push remote and branch.
+- Enabled or disabled state.
 
-This makes it possible to use different automation rules for different projects.
+This means you can have one repository auto-committing every 15 minutes and another every two hours, with completely different LLM usage and push rules.
 
-### Configurable LLM integration
+### Configurable LLM providers
 
-The app does not depend on a single AI provider.
+The application is provider-agnostic. You can point it at a local server running LM Studio or Ollama with no API key required, or configure it with a cloud provider of your choice. The base URL, model name, and API key are all user-configurable from the Settings panel.
 
-Instead, it supports both local and cloud-based LLM providers, allowing users to choose between privacy-first local setups and hosted APIs depending on their workflow.
+### Three commit generation modes
 
-### Smart commit generation modes
+- `always` — always call the LLM to generate the commit message.
+- `smart` — call the LLM only when the diff meets a significance threshold (configurable minimum line count or file count).
+- `never` — skip the LLM entirely and use a heuristic commit message based on diff statistics.
 
-AutoCommit GitGenius includes three commit generation modes:
+### Human-in-the-Loop
 
-- `always` — always call the LLM.
-- `smart` — call the LLM only when the diff is considered significant.
-- `never` — skip the LLM and generate a heuristic commit message.
+When Human-in-the-Loop is enabled, the app stops before creating the final commit and shows a review modal with:
 
-This gives the user a practical balance between speed, cost, determinism, and output quality.
+- The generated commit message (editable).
+- A diff preview (first 60 lines).
+- Diff statistics (files changed, insertions, deletions, estimated tokens).
+- A list of changed files.
+- An optional Git tag field.
+- A push toggle for that specific commit.
 
-### Human-in-the-Loop review
-
-For users who want automation without losing control, the project includes an approval flow before the final commit is created.
-
-When enabled, the app can show:
-
-- The generated commit message.
-- A short diff preview.
-- Basic diff statistics.
-- The list of changed files.
-- An optional tag field.
-- A push toggle for the approval step.
+Only when the user confirms does the actual `git commit` (and optional `git push`) run.
 
 ### Dry run mode
 
-Dry run allows the user to preview the generated message and the analyzed diff stats without creating a real commit.
+Dry run runs the full analysis and generation pipeline without staging or committing anything. It returns the message that would have been generated along with the diff statistics, so you can test provider settings and message quality before enabling automation.
 
-This is useful for testing provider settings, checking message quality, or validating automation behavior before enabling it in a real workflow.
+### Local commit history
 
-### Local history and export
+Every commit processed by the app is stored locally with:
 
-The application stores a local history of generated commits including repository path, timestamp, message, whether an LLM was used, file count, insertions, deletions, and estimated tokens.
+- Timestamp.
+- Repository path.
+- Commit message.
+- Whether an LLM was used or not.
+- Number of files changed.
+- Insertions and deletions.
+- Estimated token usage.
 
-This history can be filtered in the UI and exported as CSV.
+The history can be filtered by repository and type (AI vs. heuristic), and exported as **CSV** or **JSON**.
+
+### Light and dark theme
+
+The desktop interface supports light and dark themes, with the current selection persisted in configuration.
 
 ---
 
-## Screenshot placeholders
+## Screenshots
 
-Add your own screenshots in this section later.
+> Add your screenshots here. Suggested content below.
 
-- **Screenshot placeholder:** Main dashboard with multiple repositories configured and visible in the repositories panel.
-- **Screenshot placeholder:** Settings screen showing provider configuration, Smart Mode selection, threshold settings, and Human-in-the-Loop toggle.
-- **Screenshot placeholder:** Dry run modal displaying a generated commit message and diff statistics.
-- **Screenshot placeholder:** Approval modal showing editable commit message, tag field, push toggle, and diff preview.
-- **Screenshot placeholder:** Commit history view with statistics cards, filters, and export buttons.
+- **Screenshot 1:** Main repositories panel showing multiple tracked repositories with their status, last commit time, and action buttons.
+- **Screenshot 2:** Settings panel showing provider selector, base URL, model name, API key input, Smart Mode selector, threshold slider, and Human-in-the-Loop toggle.
+- **Screenshot 3:** Dry run modal showing the generated commit message and diff statistics before any commit is made.
+- **Screenshot 4:** Human-in-the-Loop approval modal with editable message, diff preview, changed files list, tag input, and push toggle.
+- **Screenshot 5:** Commit history panel with summary stats, repository and type filters, and CSV/JSON export buttons.
 
 ---
 
 ## How the commit flow works
 
-The current core workflow is intentionally simple and practical.
+### Standard automatic flow
 
-### Standard flow
-
-1. Check whether the repository has pending changes.
-2. Stage changes with `git add .`.
-3. Read the diff.
-4. Analyze insertions, deletions, changed files, and estimated token usage.
-5. Decide whether to call the LLM based on the configured Smart Mode.
-6. If the LLM is used, sanitize the response to remove markdown, quotes, or conversational filler.
-7. Apply a commit prefix if one is configured.
-8. Create the Git commit.
-9. Optionally push to the configured remote and branch.
+1. The background timer ticks every **60 seconds**.
+2. For each enabled repository, it checks whether the configured interval has elapsed since the last commit.
+3. If the interval has elapsed: run `git status --porcelain` to check for pending changes.
+4. If there are changes: run `git add .` to stage everything.
+5. Run `git diff --cached` to read the staged diff.
+6. Analyze the diff: count insertions, deletions, changed files, and estimate token usage.
+7. Based on the configured **Smart Mode**, decide whether to call the LLM.
+8. Call the LLM (or generate a heuristic message if the LLM is skipped or fails).
+9. Sanitize the LLM response: extract the first non-empty non-markdown line, strip quotes and backticks, remove conversational prefixes.
+10. Apply the commit prefix if one is configured.
+11. If **Human-in-the-Loop** is enabled: stop, return the pending approval to the frontend, bring the window to the foreground.
+12. If HITL is disabled: run `git commit -m "<message>"`.
+13. If push is enabled: run `git push <remote> <branch>`.
 
 ### Fallback behavior
 
-If the LLM fails, the app falls back to a heuristic commit message based on the diff statistics.
+If the LLM call fails for any reason (connection error, rate limit, invalid response), the app falls back to a heuristic commit message built from diff statistics. This keeps the tool functional even when providers are offline or misconfigured.
 
-That behavior is important because it keeps the tool usable even when a provider is offline, unavailable, rate-limited, or incorrectly configured.
+### Cooldown
 
-### Approval flow
-
-When Human-in-the-Loop is enabled, the app stops before creating the final commit and returns a pending approval object instead.
-
-The user can then review the proposed message, edit it, add a tag, decide whether to push, and confirm the operation manually.
+Each repository has a configurable cooldown in minutes. If the time since the last successful commit is less than the cooldown, the commit is skipped for that cycle.
 
 ---
 
 ## Supported LLM providers
-
-The configuration model currently defines support for the following providers:
 
 | Provider | Default base URL | Default model | API key required |
 |---|---|---|---|
@@ -223,42 +253,56 @@ The configuration model currently defines support for the following providers:
 | Together | `https://api.together.xyz/v1` | `meta-llama/Llama-3-8b-chat-hf` | Yes |
 | OpenRouter | `https://openrouter.ai/api/v1` | `openai/gpt-4o-mini` | Yes |
 
-This provider flexibility is one of the most important characteristics of the project and should be reflected in its public presentation.
+All cloud providers use an OpenAI-compatible chat completions endpoint except Anthropic, which uses its own `/messages` API with a dedicated request format.
 
 ---
 
 ## Desktop interface
 
-The desktop UI is currently organized into three main sections:
+The UI is currently organized into three main sections accessible from the sidebar:
 
 ### Repositories
 
-This section is focused on adding repositories, editing repository-specific settings, enabling or disabling tracked repositories, running manual commits, and previewing diffs.
+The primary working view. Shows all tracked repositories with their current state, last commit time, and action buttons for manual commit, dry run, and settings. This is where you add, edit, enable, disable, and remove repositories.
 
 ### Settings
 
-This section centralizes LLM provider settings, base URL, model name, API key, Smart Mode, threshold configuration, commit behavior, and theme selection.
+Global configuration for the LLM provider (base URL, model, API key, connection test), Smart Mode and significance threshold, default commit prefix, Human-in-the-Loop toggle, and theme selection.
+
+Individual repositories can override the commit prefix set here.
 
 ### Commit History
 
-This section shows the local commit log with summary stats, filters, and export actions.
-
-The interface also supports dark and light themes.
+Local commit log with summary statistics (total commits, AI-generated, heuristic, estimated tokens used), filtering by repository and type, and export to CSV or JSON.
 
 ---
 
 ## Architecture
 
-AutoCommit GitGenius follows a straightforward desktop application architecture:
+The project follows a clear desktop application architecture:
 
-- **Frontend:** HTML, CSS, and JavaScript UI rendered through Tauri.
-- **Backend:** Rust commands exposed to the frontend through Tauri IPC.
-- **Git execution layer:** Native Git commands executed through system processes.
-- **LLM integration layer:** HTTP-based provider calls for OpenAI-compatible and Anthropic-style APIs.
-- **Persistence layer:** Local JSON configuration stored in the user config directory.
-- **Automation layer:** Background timer that checks enabled repositories on a fixed interval.
+┌─────────────────────────────────────────────┐
+│ Tauri WebView (UI) │
+│ HTML + CSS + JavaScript (app.js) │
+└─────────────────────┬───────────────────────┘
+│ IPC (Tauri commands)
+┌─────────────────────▼───────────────────────┐
+│ Rust Backend │
+│ commands.rs ─ config.rs ─ git.rs │
+│ llm.rs ─ timer.rs ─ main.rs │
+└──────────┬──────────────────────┬────────────┘
+│ │
+┌──────▼──────┐ ┌────────▼────────┐
+│ Git (CLI) │ │ LLM Provider │
+│ processes │ │ (local/cloud) │
+└─────────────┘ └─────────────────┘
 
-This architecture keeps the project lightweight, portable, and easy to understand for contributors.
+- **Frontend** renders through Tauri's embedded WebView with no external browser dependency.
+- **Backend** exposes async Rust commands to the frontend via Tauri IPC.
+- **Git operations** run as child processes using the system-installed `git` binary.
+- **LLM calls** are made over HTTP using `reqwest` with a shared static client.
+- **Configuration** is persisted as a local JSON file in the OS config directory.
+- **Automation** runs as a background async task with a 60-second tick.
 
 ---
 
@@ -267,119 +311,79 @@ This architecture keeps the project lightweight, portable, and easy to understan
 | Layer | Technology |
 |---|---|
 | Desktop framework | Tauri v2 |
-| Backend | Rust |
+| Backend language | Rust |
 | Frontend | HTML, CSS, JavaScript |
 | Async runtime | Tokio |
 | HTTP client | Reqwest |
-| Serialization | Serde / Serde JSON |
+| Serialization | Serde + Serde JSON |
+| State management | `Arc<Mutex<AppConfig>>` |
 | Desktop dialogs | tauri-plugin-dialog |
-| CI/CD | GitHub Actions |
+| CI/CD | GitHub Actions (`tauri-apps/tauri-action`) |
 | License | MIT |
 
 ---
 
 ## Requirements
 
-Before running the project locally, make sure you have:
-
 - **Node.js 20+**
-- **Rust stable**
+- **Rust stable toolchain** — [install here](https://www.rust-lang.org/tools/install)
 - **Git** installed and available in `PATH`
-- A reachable LLM provider, either local or cloud-based
-
-Depending on your chosen provider, you may also need an API key.
+- At least one reachable LLM provider (local or cloud)
 
 ---
 
-## Installation
-
-### Clone the repository
+## Installation and development
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/Phosky71/AutoCommit-GitGenius.git
 cd AutoCommit-GitGenius
-```
 
-### Install dependencies
-
-```bash
+# 2. Install frontend dependencies
 npm install
-```
 
-### Start in development mode
-
-```bash
+# 3. Start the app in development mode
 npm run dev
-```
-
-You can also run:
-
-```bash
+# or
 npx tauri dev
 ```
 
 ---
 
-## Development
-
-The project is intended to be approachable for developers familiar with frontend JavaScript and Rust.
-
-Typical development areas include:
-
-- Improving commit generation heuristics.
-- Expanding provider compatibility.
-- Refining UI and desktop UX.
-- Hardening repository validation and error handling.
-- Improving configuration persistence.
-- Enhancing release automation.
-
-If you are contributing, it is a good idea to keep changes scoped and focused, especially when touching both frontend and backend logic.
-
----
-
 ## Build and releases
-
-To build a production version locally:
 
 ```bash
 npm run build
-```
-
-You can also use:
-
-```bash
+# or
 npx tauri build
 ```
 
-The repository includes a GitHub Actions release workflow that runs on tags matching the `v*` pattern.
+The installer is generated in `src-tauri/target/release/bundle/`.
 
-Current public release version:
+The repository includes a GitHub Actions workflow (`.github/workflows/release.yml`) that automatically builds for Windows, macOS, and Ubuntu when a tag matching `v*` is pushed:
 
-- **v1.0.7**
+```bash
+git tag v1.0.8
+git push origin v1.0.8
+```
 
-The workflow is configured to build for:
-
-- Windows
-- macOS
-- Ubuntu Linux
-
-Release artifacts are published as GitHub releases.
+The current published release is **v1.0.7**, available for [download here](https://github.com/Phosky71/AutoCommit-GitGenius/releases/latest).
 
 ---
 
 ## Configuration and local storage
 
-The application persists configuration to a local JSON file in the system config directory.
+All settings are stored as a single JSON file in the OS user config directory:
 
-Typical paths are:
+| OS | Path |
+|---|---|
+| Windows | `%APPDATA%\auto-commit-app\config.json` |
+| macOS | `~/Library/Application Support/auto-commit-app/config.json` |
+| Linux | `~/.config/auto-commit-app/config.json` |
 
-- **Windows:** `%APPDATA%\auto-commit-app\config.json`
-- **macOS:** `~/Library/Application Support/auto-commit-app/config.json`
-- **Linux:** `~/.config/auto-commit-app/config.json`
+The config file stores global settings, all repository entries, theme preference, and the full commit history. It is created automatically on first run.
 
-The stored configuration includes global settings, repository entries, theme, and commit history.
-
-Because the project stores provider configuration locally, users should still review how they manage secrets on their own machines.
+> **Important:** API keys are stored in plain text in this local file. Ensure your machine's config directory is appropriately protected.
 
 ---
 
@@ -389,76 +393,65 @@ Because the project stores provider configuration locally, users should still re
 AutoCommit-GitGenius/
 ├── .github/
 │   └── workflows/
-│       └── release.yml
+│       └── release.yml          # Multi-platform build on v* tags
 ├── frontend/
-│   ├── app.js
-│   ├── index.html
-│   └── style.css
+│   ├── app.js                   # All UI logic, Tauri IPC calls, modals, events
+│   ├── index.html               # App shell: sidebar + panels
+│   └── style.css                # Design system, dark/light themes, CSS variables
 ├── src-tauri/
 │   ├── src/
-│   │   ├── commands.rs
-│   │   ├── config.rs
-│   │   ├── git.rs
-│   │   ├── llm.rs
-│   │   ├── main.rs
-│   │   └── timer.rs
-│   ├── Cargo.toml
-│   └── tauri.conf.json
-├── LICENSE
+│   │   ├── main.rs              # App entry point, Tauri builder, command registration
+│   │   ├── commands.rs          # All Tauri commands exposed to the frontend
+│   │   ├── config.rs            # AppConfig struct, LlmProvider, SmartMode, persistence
+│   │   ├── git.rs               # Diff analysis, fallback messages, commit execution
+│   │   ├── llm.rs               # HTTP client for LLM providers, system prompt
+│   │   └── timer.rs             # Background automation loop, per-repo scheduling
+│   ├── capabilities/            # Tauri v2 permission definitions
+│   ├── Cargo.toml               # Rust dependencies
+│   └── tauri.conf.json          # App metadata, window config, bundle settings
+├── LICENSE                      # MIT License — Copyright © 2026 Operia Systems
 ├── README.md
-├── TODOLIST.MD
-└── package.json
+├── TODOLIST.MD                  # Active known issues and planned fixes
+└── package.json                 # npm scripts: dev, build
 ```
-
-### File roles
-
-- `frontend/index.html` — main application shell.
-- `frontend/app.js` — client-side application logic and UI behavior.
-- `frontend/style.css` — visual design and theme system.
-- `src-tauri/src/main.rs` — Tauri application entry point.
-- `src-tauri/src/commands.rs` — backend commands exposed to the frontend.
-- `src-tauri/src/config.rs` — configuration model and persistence helpers.
-- `src-tauri/src/git.rs` — diff analysis and commit execution logic.
-- `src-tauri/src/llm.rs` — provider communication layer.
-- `src-tauri/src/timer.rs` — background automation loop.
 
 ---
 
-## Roadmap and known issues
+## Known issues and roadmap
 
-This project is usable, but it is still evolving.
+This project is actively developed. The following issues are currently known and tracked in [`TODOLIST.MD`](TODOLIST.MD):
 
-The repository currently includes the following TODO items:
+| Status | Issue |
+|---|---|
+| 🔧 In progress | Timer accuracy — current timing behavior is inconsistent and needs correction |
+| 🔧 In progress | Token rate limiting — the app does not yet handle provider rate limits gracefully |
+| 🔧 In progress | Commit history — some history entries display incorrect or incomplete information |
+| 🔧 In progress | API key persistence — the API key is cleared when saving settings from the UI |
 
-- Fix timer accuracy and current timing issues.
-- Handle token request limits and rate limiting more safely.
-- Fix incorrect or incomplete history information.
-- Fix API key saving so it is not cleared when saving changes.
+These are real issues in the current version. If any of them affect your workflow, contributions are welcome.
 
-Keeping these items visible in the README is valuable because it sets realistic expectations for users and contributors.
+> The next immediate priorities are fixing the API key persistence bug and improving timer reliability.
 
 ---
 
 ## Contributing
 
-Contributions are welcome.
-
-A practical contribution workflow is:
+Contributions are welcome. The project is open source and maintained by Operia Systems.
 
 1. Fork the repository.
-2. Create a feature branch.
-3. Make a focused change.
-4. Use clear commit messages, ideally following Conventional Commits.
-5. Open a Pull Request with a concise explanation of what changed and why.
+2. Create a descriptive feature or fix branch: `git checkout -b fix/api-key-persistence`.
+3. Make focused, well-scoped changes.
+4. Write commit messages following [Conventional Commits](https://www.conventionalcommits.org).
+5. Open a Pull Request with a clear description of what changed and why.
 
-Useful contribution areas include:
+Good areas to contribute:
 
-- Bug fixes
-- UX improvements
-- LLM provider enhancements
-- Commit history improvements
-- Timer reliability
-- Documentation and examples
+- Bug fixes from the TODO list above.
+- LLM provider improvements and edge case handling.
+- Commit message quality and sanitization.
+- Timer reliability and scheduling accuracy.
+- UI improvements and usability.
+- Documentation and examples.
 
 ---
 
@@ -466,170 +459,183 @@ Useful contribution areas include:
 
 This project is released under the **MIT License**.
 
-See [LICENSE](LICENSE) for the full text.
+> MIT License — Copyright © 2026 Operia Systems
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+See [LICENSE](LICENSE) for the full license text.
 
 ---
-
-## About Operia Systems
-
-[Operia Systems](https://operiasystems.com) is the business behind this project.
-
-AutoCommit GitGenius is one of its open-source developer tools and reflects a practical approach to software: lightweight products, useful automation, and real-world developer workflows.
-
 ---
 
 # Español
+
+## Sobre Operia Systems
+
+AutoCommit GitGenius es un proyecto open source desarrollado y mantenido por **[Operia Systems](https://operiasystems.com)**, un negocio de software centrado en construir herramientas prácticas para desarrolladores y equipos.
+
+Este proyecto refleja el enfoque de Operia Systems: productos ligeros, automatización honesta y flujos de trabajo reales para desarrolladores. Se publica bajo la MIT License para que cualquiera pueda usarlo, mejorarlo y construir sobre él.
+
+> **Licencia:** MIT — Copyright © 2026 Operia Systems. Ver [LICENSE](LICENSE) para el texto completo.
+
+---
 
 ## Resumen
 
 AutoCommit GitGenius es una aplicación de escritorio **open source** construida con **Tauri v2**, backend en **Rust** y un frontend ligero en **HTML/CSS/JavaScript**.
 
-Su objetivo es reducir la fricción de los commits repetitivos detectando cambios en repositorios, generando mensajes de commit y, si se desea, haciendo push a un remote y una branch configurados.
+Automatiza commits de Git vigilando repositorios en busca de cambios, analizando diffs, generando mensajes con un LLM configurable y, opcionalmente, haciendo push a un remote — todo sin interrumpir el flujo de trabajo.
 
-El proyecto proviene de **Operia Systems** y está planteado como una herramienta práctica de productividad para desarrolladores, no como un sustituto completo de Git.
+La aplicación soporta **múltiples repositorios simultáneamente**, cada uno con su propio intervalo, cooldown, prefijo y configuración de push. Funciona con proveedores LLM locales como LM Studio y Ollama, y también con proveedores cloud como OpenAI, Gemini, Groq, Anthropic, Mistral, Together y OpenRouter.
+
+---
+
+## Descarga
+
+La última versión es **v1.0.7**, disponible para Windows y macOS:
+
+| Plataforma | Archivo | Tamaño |
+|---|---|---|
+| macOS (Apple Silicon) | [AutoCommit_1.0.6_aarch64.dmg](https://github.com/Phosky71/AutoCommit-GitGenius/releases/download/v1.0.7/AutoCommit_1.0.6_aarch64.dmg) | 8.33 MB |
+| macOS (app bundle) | [AutoCommit_aarch64.app.tar.gz](https://github.com/Phosky71/AutoCommit-GitGenius/releases/download/v1.0.7/AutoCommit_aarch64.app.tar.gz) | 8.25 MB |
+| Windows (instalador) | [AutoCommit_1.0.6_x64-setup.exe](https://github.com/Phosky71/AutoCommit-GitGenius/releases/download/v1.0.7/AutoCommit_1.0.6_x64-setup.exe) | 5.09 MB |
+| Windows (MSI) | [AutoCommit_1.0.6_x64_en-US.msi](https://github.com/Phosky71/AutoCommit-GitGenius/releases/download/v1.0.7/AutoCommit_1.0.6_x64_en-US.msi) | 7.74 MB |
+
+> **Nota:** El tag del release es `v1.0.7` pero los nombres de los binarios muestran `1.0.6` porque la versión en `tauri.conf.json` no se actualizó antes de compilar. Esto se corregirá en el próximo release.
+
+[→ Todos los releases](https://github.com/Phosky71/AutoCommit-GitGenius/releases)
 
 ---
 
 ## Por qué existe este proyecto
 
-Muchos desarrolladores trabajan en ciclos cortos e iterativos y suelen retrasar los commits porque parar a resumir cambios rompe el ritmo.
+Muchos desarrolladores trabajan en ciclos cortos e iterativos y suelen retrasar los commits porque parar a escribir un mensaje significativo rompe la concentración.
 
-AutoCommit GitGenius busca hacer ese flujo más cómodo ayudando con la generación del commit, pero manteniendo el control del usuario sobre cuándo y cómo se realiza.
+AutoCommit GitGenius se creó para reducir esa fricción. En lugar de exigir atención completa para cada commit, detecta qué ha cambiado, genera un mensaje estructurado y solo pide confirmación cuando el usuario lo quiere explícitamente.
 
-Resulta especialmente útil en configuraciones local-first donde se quiere combinar automatización Git con LLMs locales como LM Studio u Ollama, sin perder compatibilidad con proveedores cloud.
+Es especialmente útil en configuraciones local-first donde se quiere automatización Git sin enviar código a servicios externos. Con LM Studio u Ollama, todo el proceso corre completamente offline.
 
 ---
 
 ## Alcance actual
 
-AutoCommit GitGenius está centrado en la **automatización de commits**, no en sustituir clientes Git completos ni flujos enteros de hosting de repositorios.
+AutoCommit GitGenius está centrado en la **automatización de commits**. No es un cliente Git GUI, una suite de gestión de ramas ni una herramienta de resolución de conflictos.
 
-Actualmente está diseñado para:
+**Lo que hace hoy:**
 
-- Monitorizar repositorios Git locales.
-- Detectar archivos modificados y analizar diffs.
-- Generar mensajes de commit mediante heurísticas o un LLM configurable.
+- Monitorizar repositorios Git locales en busca de cambios.
+- Analizar diffs y generar mensajes de commit con heurísticas o un LLM configurado.
+- Ejecutar comprobaciones de commit según un horario configurable por repositorio.
 - Requerir aprobación manual opcional antes del commit final.
-- Hacer push opcional a un remote y una branch configurados.
-- Guardar historial local para revisión y exportación.
+- Hacer push opcional a un remote y branch configurados.
+- Guardar un historial local de commits generados.
 
-Lo que **no** es:
+**Lo que no hace:**
 
-- Un cliente Git GUI completo.
-- Una herramienta de resolución de conflictos.
-- Una plataforma de hosting de repositorios.
-- Un sistema completo de orquestación de ramas.
+- Cambiar de rama ni hacer merge.
+- Gestión de repositorios remotos.
+- Resolución de conflictos.
+- Visualización completa del historial de Git.
 
 ---
 
 ## Funcionalidades principales
 
-### Gestión multi-repositorio
+### Soporte multi-repositorio
 
-La aplicación soporta múltiples repositorios Git, cada uno con su propia configuración local.
+Cada repositorio tiene su propia configuración independiente:
 
-Cada repo puede almacenar:
+- Intervalo de commit (en minutos).
+- Cooldown entre commits consecutivos (en minutos).
+- Prefijo de commit personalizado.
+- Push habilitado o deshabilitado.
+- Remote y branch de push.
+- Estado habilitado o deshabilitado.
 
-- Intervalo de commit en minutos.
-- Cooldown entre commits.
-- Prefijo de commit.
-- Push activado o desactivado.
-- Remote de push.
-- Branch de push.
-- Estado habilitado.
+Esto permite, por ejemplo, tener un repositorio haciendo auto-commit cada 15 minutos y otro cada dos horas, con reglas completamente distintas de LLM y push.
 
-Esto permite usar reglas distintas según el proyecto.
+### Proveedores LLM configurables
 
-### Integración configurable con LLMs
+La aplicación es agnóstica al proveedor. Se puede apuntar a un servidor local con LM Studio u Ollama sin necesitar API key, o configurar un proveedor cloud. La base URL, el nombre del modelo y la API key son configurables desde el panel de Settings.
 
-La aplicación no depende de un único proveedor de IA.
+### Tres modos de generación
 
-Soporta proveedores locales y cloud, permitiendo elegir entre privacidad en entorno local o APIs alojadas según el flujo de trabajo de cada usuario.
-
-### Modos de generación inteligentes
-
-AutoCommit GitGenius incluye tres modos:
-
-- `always` — siempre llama al LLM.
-- `smart` — solo llama al LLM cuando el diff se considera significativo.
-- `never` — no usa LLM y genera un mensaje heurístico.
-
-Esto da un equilibrio práctico entre velocidad, coste, determinismo y calidad del resultado.
+- `always` — siempre llama al LLM para generar el mensaje.
+- `smart` — llama al LLM solo cuando el diff supera un umbral de significatividad (líneas cambiadas o número de archivos).
+- `never` — omite el LLM y genera un mensaje heurístico basado en estadísticas del diff.
 
 ### Human-in-the-Loop
 
-Para quienes quieren automatización sin perder control, el proyecto incluye un flujo de aprobación antes de crear el commit final.
+Cuando está activado, la app se detiene antes del commit final y muestra un modal de revisión con:
 
-Cuando está activo, la app puede mostrar:
+- El mensaje generado (editable).
+- Un preview del diff (primeras 60 líneas).
+- Estadísticas del diff (archivos, inserciones, borrados, tokens estimados).
+- Lista de archivos modificados.
+- Campo opcional para un tag de Git.
+- Toggle de push para ese commit concreto.
 
-- El mensaje generado.
-- Un diff preview corto.
-- Estadísticas básicas del diff.
-- La lista de archivos modificados.
-- Un campo opcional para tag.
-- Un selector para decidir si hacer push.
+Solo cuando el usuario confirma se ejecuta el `git commit` y el `git push` opcional.
 
 ### Modo dry run
 
-El dry run permite previsualizar el mensaje generado y las estadísticas del diff sin crear un commit real.
-
-Es útil para probar la configuración del proveedor, revisar la calidad del mensaje o validar el comportamiento de la automatización antes de activarla en un flujo real.
+El dry run ejecuta todo el análisis y la generación sin hacer stage ni commit. Devuelve el mensaje que se habría generado junto con las estadísticas del diff, para poder probar configuraciones y calidad del mensaje antes de activar la automatización.
 
 ### Historial local y exportación
 
-La aplicación guarda un historial local de commits generados con ruta del repositorio, timestamp, mensaje, si se usó LLM, número de archivos, inserciones, borrados y tokens estimados.
+Cada commit procesado se guarda localmente con timestamp, ruta del repositorio, mensaje, si se usó LLM o no, número de archivos, inserciones, borrados y uso estimado de tokens.
 
-Ese historial se puede filtrar desde la interfaz y exportar como CSV.
+El historial se puede filtrar por repositorio y tipo, y exportar como **CSV** o **JSON**.
 
 ---
 
-## Marcadores para capturas
+## Capturas de pantalla
 
-Añade aquí tus capturas reales más adelante.
+> Añade tus capturas aquí cuando las tengas. Contenido sugerido:
 
-- **Marcador de captura:** Pantalla principal con varios repositorios configurados en el panel de repositories.
-- **Marcador de captura:** Pantalla de settings mostrando proveedor, Smart Mode, umbral y Human-in-the-Loop.
-- **Marcador de captura:** Modal de dry run con mensaje generado y estadísticas del diff.
-- **Marcador de captura:** Modal de aprobación con mensaje editable, campo de tag, push toggle y diff preview.
-- **Marcador de captura:** Vista de commit history con tarjetas de estadísticas, filtros y botones de exportación.
+- **Captura 1:** Panel principal de repositorios con múltiples repos configurados, estado, último commit y botones de acción.
+- **Captura 2:** Panel de settings con selector de proveedor, base URL, modelo, API key, Smart Mode y toggle de Human-in-the-Loop.
+- **Captura 3:** Modal de dry run mostrando el mensaje generado y estadísticas del diff.
+- **Captura 4:** Modal de aprobación con mensaje editable, preview del diff, lista de archivos, campo de tag y toggle de push.
+- **Captura 5:** Panel de historial con tarjetas de estadísticas, filtros y botones de exportación CSV/JSON.
 
 ---
 
 ## Cómo funciona el flujo de commit
 
-El flujo principal actual está planteado para ser sencillo y práctico.
+### Flujo automático estándar
 
-### Flujo estándar
+1. El timer de background hace un tick cada **60 segundos**.
+2. Para cada repositorio habilitado, comprueba si ha pasado el intervalo configurado desde el último commit.
+3. Si ha pasado: ejecuta `git status --porcelain` para comprobar cambios pendientes.
+4. Si hay cambios: ejecuta `git add .` para hacer stage de todo.
+5. Ejecuta `git diff --cached` para leer el diff.
+6. Analiza el diff: inserciones, borrados, archivos cambiados y estimación de tokens.
+7. Según el **Smart Mode** configurado, decide si llamar al LLM.
+8. Llama al LLM o genera un mensaje heurístico si el LLM no se usa o falla.
+9. Sanea la respuesta: extrae la primera línea válida, elimina markdown, comillas, backticks y prefijos conversacionales.
+10. Aplica el prefijo de commit si está configurado.
+11. Si **Human-in-the-Loop** está activo: detiene el flujo, devuelve la aprobación pendiente al frontend y trae la ventana al primer plano.
+12. Si HITL está desactivado: ejecuta `git commit -m "<mensaje>"`.
+13. Si el push está habilitado: ejecuta `git push <remote> <branch>`.
 
-1. Comprueba si el repositorio tiene cambios pendientes.
-2. Hace stage con `git add .`.
-3. Lee el diff.
-4. Analiza inserciones, borrados, archivos cambiados y estimación de tokens.
-5. Decide si llamar al LLM según el Smart Mode configurado.
-6. Si usa el LLM, sanea la respuesta para eliminar markdown, comillas o texto conversacional.
-7. Aplica un prefijo si está configurado.
-8. Crea el commit.
-9. Opcionalmente hace push al remote y branch configurados.
+### Fallback
 
-### Comportamiento de fallback
+Si la llamada al LLM falla por cualquier motivo (error de conexión, rate limit, respuesta inválida), la app genera un mensaje heurístico a partir de las estadísticas del diff. Esto mantiene la herramienta funcional incluso cuando el proveedor no está disponible o está mal configurado.
 
-Si el LLM falla, la aplicación usa un mensaje heurístico basado en las estadísticas del diff.
+### Cooldown
 
-Ese comportamiento es importante porque mantiene la herramienta utilizable incluso cuando el proveedor está caído, no disponible, limitado por cuota o mal configurado.
-
-### Flujo con aprobación
-
-Cuando Human-in-the-Loop está activado, la aplicación se detiene antes del commit final y devuelve una aprobación pendiente.
-
-Después, el usuario puede revisar el mensaje propuesto, editarlo, añadir un tag, decidir si quiere push y confirmar manualmente la operación.
+Cada repositorio tiene un cooldown configurable en minutos. Si el tiempo desde el último commit exitoso es menor que el cooldown, ese repositorio se salta en ese ciclo.
 
 ---
 
 ## Proveedores LLM soportados
 
-El modelo de configuración actual define soporte para estos proveedores:
-
-| Proveedor | URL base por defecto | Modelo por defecto | Requiere API key |
+| Proveedor | URL base por defecto | Modelo por defecto | API key requerida |
 |---|---|---|---|
 | LM Studio | `http://localhost:1234/v1` | `local-model` | No |
 | Ollama | `http://localhost:11434/v1` | `llama3.2` | No |
@@ -643,42 +649,47 @@ El modelo de configuración actual define soporte para estos proveedores:
 | Together | `https://api.together.xyz/v1` | `meta-llama/Llama-3-8b-chat-hf` | Sí |
 | OpenRouter | `https://openrouter.ai/api/v1` | `openai/gpt-4o-mini` | Sí |
 
-Esta flexibilidad con proveedores es una de las características más importantes del proyecto y conviene reflejarla bien en su presentación pública.
+Todos los proveedores cloud usan un endpoint compatible con OpenAI para chat completions, excepto Anthropic, que utiliza su propia API `/messages` con un formato de petición dedicado.
 
 ---
 
 ## Interfaz de escritorio
 
-La interfaz se organiza actualmente en tres secciones principales.
+La UI se organiza en tres secciones principales accesibles desde el sidebar:
 
 ### Repositories
 
-Esta sección se centra en añadir repositorios, editar ajustes por repo, habilitar o deshabilitar repos monitorizados, lanzar commits manuales y previsualizar diffs.
+Vista principal de trabajo. Muestra todos los repositorios monitorizados con su estado, último commit y botones para commit manual, dry run y edición. Aquí se añaden, editan, habilitan, deshabilitan y eliminan repositorios.
 
 ### Settings
 
-Aquí se centralizan la configuración del proveedor LLM, la base URL, el modelo, la API key, el Smart Mode, el umbral, el comportamiento del commit y el tema visual.
+Configuración global del proveedor LLM (base URL, modelo, API key, test de conexión), Smart Mode y umbral de significatividad, prefijo de commit por defecto, toggle de Human-in-the-Loop y selección de tema.
+
+Los repositorios individuales pueden sobreescribir el prefijo configurado aquí.
 
 ### Commit History
 
-Aquí se muestra el historial local con estadísticas resumidas, filtros y acciones de exportación.
-
-La interfaz también soporta tema oscuro y claro.
+Historial local con estadísticas resumidas (commits totales, generados por IA, heurísticos, tokens estimados), filtros por repositorio y tipo, y exportación a CSV o JSON.
 
 ---
 
 ## Arquitectura
 
-AutoCommit GitGenius sigue una arquitectura de aplicación de escritorio clara y bastante directa:
-
-- **Frontend:** interfaz en HTML, CSS y JavaScript renderizada con Tauri.
-- **Backend:** comandos en Rust expuestos al frontend por IPC de Tauri.
-- **Capa Git:** ejecución de comandos Git nativos mediante procesos del sistema.
-- **Capa LLM:** llamadas HTTP a proveedores compatibles con OpenAI y Anthropic.
-- **Persistencia:** configuración JSON local en el directorio de configuración del usuario.
-- **Automatización:** timer en background que revisa repos habilitados en intervalos fijos.
-
-Esta arquitectura mantiene el proyecto ligero, portable y fácil de entender para contribuidores.
+┌─────────────────────────────────────────────┐
+│ Tauri WebView (UI) │
+│ HTML + CSS + JavaScript (app.js) │
+└─────────────────────┬───────────────────────┘
+│ IPC (comandos Tauri)
+┌─────────────────────▼───────────────────────┐
+│ Backend Rust │
+│ commands.rs ─ config.rs ─ git.rs │
+│ llm.rs ─ timer.rs ─ main.rs │
+└──────────┬──────────────────────┬────────────┘
+│ │
+┌──────▼──────┐ ┌────────▼────────┐
+│ Git (CLI) │ │ Proveedor LLM │
+│ procesos │ │ (local/cloud) │
+└─────────────┘ └─────────────────┘
 
 ---
 
@@ -687,119 +698,79 @@ Esta arquitectura mantiene el proyecto ligero, portable y fácil de entender par
 | Capa | Tecnología |
 |---|---|
 | Framework de escritorio | Tauri v2 |
-| Backend | Rust |
+| Lenguaje backend | Rust |
 | Frontend | HTML, CSS y JavaScript |
 | Runtime async | Tokio |
 | Cliente HTTP | Reqwest |
-| Serialización | Serde / Serde JSON |
+| Serialización | Serde + Serde JSON |
+| Gestión de estado | `Arc<Mutex<AppConfig>>` |
 | Diálogos de escritorio | tauri-plugin-dialog |
-| CI/CD | GitHub Actions |
+| CI/CD | GitHub Actions (`tauri-apps/tauri-action`) |
 | Licencia | MIT |
 
 ---
 
 ## Requisitos
 
-Antes de ejecutar el proyecto en local, asegúrate de tener:
-
 - **Node.js 20+**
-- **Rust stable**
+- **Rust stable** — [instalar aquí](https://www.rust-lang.org/tools/install)
 - **Git** instalado y disponible en `PATH`
-- Un proveedor LLM accesible, ya sea local o cloud
-
-Según el proveedor elegido, también puede hacer falta una API key.
+- Al menos un proveedor LLM accesible (local o cloud)
 
 ---
 
-## Instalación
-
-### Clonar el repositorio
+## Instalación y desarrollo
 
 ```bash
+# 1. Clonar el repositorio
 git clone https://github.com/Phosky71/AutoCommit-GitGenius.git
 cd AutoCommit-GitGenius
-```
 
-### Instalar dependencias
-
-```bash
+# 2. Instalar dependencias del frontend
 npm install
-```
 
-### Ejecutar en desarrollo
-
-```bash
+# 3. Ejecutar en modo desarrollo
 npm run dev
-```
-
-También puedes usar:
-
-```bash
+# o
 npx tauri dev
 ```
 
 ---
 
-## Desarrollo
-
-El proyecto está pensado para ser accesible para desarrolladores que se mueven bien entre JavaScript frontend y Rust.
-
-Las áreas de trabajo más habituales incluyen:
-
-- Mejorar heurísticas de generación de commits.
-- Ampliar compatibilidad con proveedores.
-- Refinar la UI y la UX de escritorio.
-- Endurecer la validación de repositorios y el manejo de errores.
-- Mejorar la persistencia de configuración.
-- Mejorar la automatización de releases.
-
-Si contribuyes, es buena idea mantener los cambios bien acotados, sobre todo cuando tocan frontend y backend a la vez.
-
----
-
 ## Build y releases
-
-Para generar una versión de producción en local:
 
 ```bash
 npm run build
-```
-
-También puedes usar:
-
-```bash
+# o
 npx tauri build
 ```
 
-El repositorio incluye un workflow de GitHub Actions que se ejecuta con tags que sigan el patrón `v*`.
+El instalador se genera en `src-tauri/target/release/bundle/`.
 
-Versión pública actual:
+El repositorio incluye un workflow de GitHub Actions (`.github/workflows/release.yml`) que compila automáticamente para Windows, macOS y Ubuntu cuando se sube un tag con formato `v*`:
 
-- **v1.0.7**
+```bash
+git tag v1.0.8
+git push origin v1.0.8
+```
 
-El workflow está preparado para compilar en:
-
-- Windows
-- macOS
-- Ubuntu Linux
-
-Los artefactos se publican en GitHub Releases.
+El release publicado actualmente es **v1.0.7**, disponible para [descarga aquí](https://github.com/Phosky71/AutoCommit-GitGenius/releases/latest).
 
 ---
 
 ## Configuración y almacenamiento local
 
-La aplicación guarda la configuración en un archivo JSON local dentro del directorio de configuración del sistema.
+Toda la configuración se guarda en un único archivo JSON en el directorio de configuración del usuario:
 
-Rutas típicas:
+| SO | Ruta |
+|---|---|
+| Windows | `%APPDATA%\auto-commit-app\config.json` |
+| macOS | `~/Library/Application Support/auto-commit-app/config.json` |
+| Linux | `~/.config/auto-commit-app/config.json` |
 
-- **Windows:** `%APPDATA%\auto-commit-app\config.json`
-- **macOS:** `~/Library/Application Support/auto-commit-app/config.json`
-- **Linux:** `~/.config/auto-commit-app/config.json`
+El archivo almacena ajustes globales, todos los repositorios configurados, preferencia de tema e historial completo de commits. Se crea automáticamente en el primer uso.
 
-La configuración almacenada incluye ajustes globales, repositorios, tema e historial local de commits.
-
-Como la app guarda configuración del proveedor en local, conviene que cada usuario revise cómo maneja sus secretos en su propio equipo.
+> **Importante:** Las API keys se almacenan en texto plano en este archivo local. Asegúrate de que el directorio de configuración de tu equipo está apropiadamente protegido.
 
 ---
 
@@ -809,76 +780,65 @@ Como la app guarda configuración del proveedor en local, conviene que cada usua
 AutoCommit-GitGenius/
 ├── .github/
 │   └── workflows/
-│       └── release.yml
+│       └── release.yml          # Build multiplataforma en tags v*
 ├── frontend/
-│   ├── app.js
-│   ├── index.html
-│   └── style.css
+│   ├── app.js                   # Lógica completa de UI, llamadas IPC, modales, eventos
+│   ├── index.html               # Shell de la app: sidebar + paneles
+│   └── style.css                # Sistema de diseño, temas dark/light, variables CSS
 ├── src-tauri/
 │   ├── src/
-│   │   ├── commands.rs
-│   │   ├── config.rs
-│   │   ├── git.rs
-│   │   ├── llm.rs
-│   │   ├── main.rs
-│   │   └── timer.rs
-│   ├── Cargo.toml
-│   └── tauri.conf.json
-├── LICENSE
+│   │   ├── main.rs              # Punto de entrada, builder de Tauri, registro de comandos
+│   │   ├── commands.rs          # Todos los comandos Tauri expuestos al frontend
+│   │   ├── config.rs            # AppConfig, LlmProvider, SmartMode, persistencia
+│   │   ├── git.rs               # Análisis de diff, mensajes heurísticos, ejecución de commits
+│   │   ├── llm.rs               # Cliente HTTP para proveedores LLM, system prompt
+│   │   └── timer.rs             # Bucle de automatización en background, scheduling por repo
+│   ├── capabilities/            # Definiciones de permisos de Tauri v2
+│   ├── Cargo.toml               # Dependencias Rust
+│   └── tauri.conf.json          # Metadatos de la app, ventana, configuración de bundle
+├── LICENSE                      # MIT License — Copyright © 2026 Operia Systems
 ├── README.md
-├── TODOLIST.MD
-└── package.json
+├── TODOLIST.MD                  # Problemas conocidos activos y fixes planificados
+└── package.json                 # Scripts npm: dev, build
 ```
-
-### Rol de archivos
-
-- `frontend/index.html` — shell principal de la aplicación.
-- `frontend/app.js` — lógica cliente y comportamiento de la UI.
-- `frontend/style.css` — diseño visual y sistema de temas.
-- `src-tauri/src/main.rs` — punto de entrada de Tauri.
-- `src-tauri/src/commands.rs` — comandos backend expuestos al frontend.
-- `src-tauri/src/config.rs` — modelo de configuración y persistencia.
-- `src-tauri/src/git.rs` — análisis de diff y ejecución de commits.
-- `src-tauri/src/llm.rs` — capa de comunicación con proveedores.
-- `src-tauri/src/timer.rs` — bucle de automatización en background.
 
 ---
 
-## Hoja de ruta y problemas conocidos
+## Problemas conocidos y hoja de ruta
 
-El proyecto es utilizable, pero sigue evolucionando.
+Este proyecto está en desarrollo activo. Los siguientes problemas son conocidos y están registrados en [`TODOLIST.MD`](TODOLIST.MD):
 
-El repositorio incluye actualmente estos TODOs:
+| Estado | Problema |
+|---|---|
+| 🔧 En progreso | Precisión del timer — el comportamiento actual es inconsistente y necesita corrección |
+| 🔧 En progreso | Rate limiting — la app no maneja aún de forma robusta los límites de cuota de los proveedores |
+| 🔧 En progreso | Historial de commits — algunas entradas muestran información incorrecta o incompleta |
+| 🔧 En progreso | Persistencia de la API key — la clave se borra al guardar cambios en Settings |
 
-- Corregir la precisión y el comportamiento actual de los timers.
-- Manejar mejor los límites de peticiones y rate limiting.
-- Corregir información incorrecta o incompleta en el historial.
-- Arreglar el guardado de la API key para que no se borre al guardar cambios.
+Estos son problemas reales en la versión actual. Si alguno afecta a tu flujo de trabajo, las contribuciones son bienvenidas.
 
-Mantener estos puntos visibles en el README es útil porque fija expectativas realistas para usuarios y contribuidores.
+> Las próximas prioridades inmediatas son corregir el bug de la API key y mejorar la fiabilidad del timer.
 
 ---
 
 ## Contribuir
 
-Las contribuciones son bienvenidas.
+Las contribuciones son bienvenidas. El proyecto es open source y está mantenido por Operia Systems.
 
-Un flujo práctico para contribuir sería:
-
-1. Hacer fork del repositorio.
-2. Crear una rama de trabajo.
-3. Hacer un cambio bien acotado.
-4. Usar mensajes de commit claros, idealmente con Conventional Commits.
-5. Abrir una Pull Request con una explicación breve de qué cambió y por qué.
+1. Haz fork del repositorio.
+2. Crea una rama descriptiva: `git checkout -b fix/api-key-persistence`.
+3. Haz cambios bien acotados y enfocados.
+4. Escribe mensajes de commit siguiendo [Conventional Commits](https://www.conventionalcommits.org).
+5. Abre una Pull Request con una descripción clara de qué cambió y por qué.
 
 Áreas especialmente útiles para contribuir:
 
-- Corrección de bugs
-- Mejoras de UX
-- Mejoras de proveedores LLM
-- Mejoras en historial
-- Fiabilidad del timer
-- Documentación y ejemplos
+- Bugs del TODO list.
+- Mejoras y casos edge en proveedores LLM.
+- Calidad y sanitización de mensajes de commit.
+- Fiabilidad y precisión del timer.
+- Mejoras de UI y usabilidad.
+- Documentación y ejemplos.
 
 ---
 
@@ -886,12 +846,12 @@ Un flujo práctico para contribuir sería:
 
 Este proyecto se distribuye bajo la **MIT License**.
 
-Consulta [LICENSE](LICENSE) para el texto completo.
+> MIT License — Copyright © 2026 Operia Systems
+>
+> Se concede permiso, de forma gratuita, a cualquier persona que obtenga una copia de este software y los archivos de documentación asociados (el "Software"), para utilizar el Software sin restricción, incluyendo sin limitación los derechos de usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar y/o vender copias del Software, y permitir a las personas a quienes se les proporcione el Software hacer lo mismo, sujeto a las siguientes condiciones:
+>
+> El aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o partes sustanciales del Software.
+>
+> EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO.
 
----
-
-## Sobre Operia Systems
-
-[Operia Systems](https://operiasystems.com) es el negocio detrás de este proyecto.
-
-AutoCommit GitGenius es una de sus herramientas open source para desarrolladores y refleja un enfoque práctico del software: productos ligeros, automatización útil y flujos reales de trabajo para developers.
+Ver [LICENSE](LICENSE) para el texto completo.

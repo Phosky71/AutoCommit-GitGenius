@@ -1,6 +1,6 @@
 {
   "name": "autocommit-gitgenius",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "AutoCommit con IA",
   "type": "module",
   "scripts": {
@@ -17,5 +17,8 @@
     "autocommit"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "sharp": "^0.35.1"
+  }
 }

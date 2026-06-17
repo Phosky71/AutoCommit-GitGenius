@@ -28,7 +28,6 @@ pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<Comm
         last_commit,
     ) = {
         let c = state.config.lock().map_err(|e| e.to_string())?;
-        // Buscar el repo concreto por path, si no existe usar globales
         let repo = c.repos.iter().find(|r| r.path == path);
         (
             c.provider.clone(),
@@ -69,7 +68,7 @@ pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<Comm
         false,
         hitl,
     )
-    .await?;
+        .await?;
 
     if result.pending_approval.is_none()
         && result.message != "No changes to commit"
@@ -92,7 +91,6 @@ pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<Comm
             estimated_tokens: stats.estimated_tokens,
         };
         let mut c = state.config.lock().map_err(|e| e.to_string())?;
-        // Actualizar last_commit_time del repo específico
         if let Some(r) = c.repos.iter_mut().find(|r| r.path == path) {
             r.last_commit_time = now_unix();
         }
@@ -110,7 +108,6 @@ pub async fn confirm_commit(
     tag: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<CommitResult> {
-    // Leer remote/branch del repo específico
     let (push_remote, push_branch) = {
         let c = state.config.lock().map_err(|e| e.to_string())?;
         let repo = c.repos.iter().find(|r| r.path == path);
@@ -122,40 +119,74 @@ pub async fn confirm_commit(
         )
     };
 
-    Command::new("git")
+    // BUG FIX #2: git add y luego verificar que hay cambios en staging
+    // antes de intentar el commit
+    let add_status = Command::new("git")
         .args(["add", "."])
         .current_dir(&path)
         .status()
         .map_err(|e| format!("Git add error: {}", e))?;
 
-    Command::new("git")
+    if !add_status.success() {
+        return Err(format!("Git add failed with status: {}", add_status));
+    }
+
+    // Verificar que el staging no está vacío antes de commitear
+    let diff_check = Command::new("git")
+        .args(["diff", "--cached", "--quiet"])
+        .current_dir(&path)
+        .status()
+        .map_err(|e| format!("Git diff check error: {}", e))?;
+
+    // exit code 0 = sin cambios, exit code 1 = hay cambios
+    if diff_check.success() {
+        return Err("No staged changes to commit".to_string());
+    }
+
+    let commit_status = Command::new("git")
         .args(["commit", "-m", &message])
         .current_dir(&path)
         .status()
         .map_err(|e| format!("Git commit error: {}", e))?;
 
+    if !commit_status.success() {
+        return Err(format!("Git commit failed with status: {}", commit_status));
+    }
+
     if let Some(t) = &tag {
-        Command::new("git")
+        let tag_status = Command::new("git")
             .args(["tag", t])
             .current_dir(&path)
             .status()
             .map_err(|e| format!("Git tag error: {}", e))?;
+        if !tag_status.success() {
+            return Err(format!("Git tag failed with status: {}", tag_status));
+        }
     }
 
     if push_enabled {
-        Command::new("git")
+        let push_status = Command::new("git")
             .args(["push", &push_remote, &push_branch])
             .current_dir(&path)
             .status()
             .map_err(|e| format!("Git push error: {}", e))?;
+        if !push_status.success() {
+            return Err(format!("Git push failed with status: {}", push_status));
+        }
     }
 
     if let Some(t) = &tag {
-        Command::new("git")
+        let push_tag_status = Command::new("git")
             .args(["push", &push_remote, t])
             .current_dir(&path)
             .status()
             .map_err(|e| format!("Git push tag error: {}", e))?;
+        if !push_tag_status.success() {
+            return Err(format!(
+                "Git push tag failed with status: {}",
+                push_tag_status
+            ));
+        }
     }
 
     let entry = CommitHistoryEntry {
@@ -183,23 +214,23 @@ pub async fn confirm_commit(
 }
 
 #[tauri::command]
-pub async fn dry_run_commit(
-    path: String,
-    state: State<'_, AppState>,
-) -> Result<CommitResult> {
+pub async fn dry_run_commit(path: String, state: State<'_, AppState>) -> Result<CommitResult> {
     let (provider, base_url, model, api_key, smart_mode, threshold, commit_prefix) = {
         let c = state.config.lock().map_err(|e| e.to_string())?;
-
-        // <-- NUEVO: Buscar el prefijo específico del repo
-        let repo_prefix = c.repos.iter()
+        let repo_prefix = c
+            .repos
+            .iter()
             .find(|r| r.path == path)
             .map(|r| r.commit_prefix.clone())
             .unwrap_or_else(|| c.commit_prefix.clone());
-
         (
-            c.provider.clone(), c.llm_base_url.clone(), c.llm_model_name.clone(),
-            c.llm_api_key.clone(), c.smart_mode.clone(), c.smart_threshold_lines,
-            repo_prefix, // <-- USAR EL PREFIJO CORRECTO
+            c.provider.clone(),
+            c.llm_base_url.clone(),
+            c.llm_model_name.clone(),
+            c.llm_api_key.clone(),
+            c.smart_mode.clone(),
+            c.smart_threshold_lines,
+            repo_prefix,
         )
     };
     run_commit_internal(
@@ -219,7 +250,7 @@ pub async fn dry_run_commit(
         true,
         false,
     )
-    .await
+        .await
 }
 
 #[tauri::command]
@@ -230,6 +261,7 @@ pub async fn save_config(config: AppConfig, state: State<'_, AppState>) -> Resul
     *app_config = config;
     app_config.commit_history = history;
     app_config.last_successful_commit = last;
+    // BUG FIX #1: propagar el error de persistencia en lugar de descartarlo
     persist_config(&app_config);
     Ok(())
 }
@@ -243,8 +275,10 @@ pub async fn get_config(state: State<'_, AppState>) -> Result<AppConfig> {
 pub async fn load_config_from_file(state: State<'_, AppState>) -> Result<AppConfig> {
     let config_path = get_config_path()?;
     if config_path.exists() {
-        let s = fs::read_to_string(config_path).map_err(|e| format!("Read error: {}", e))?;
-        let config: AppConfig = serde_json::from_str(&s).unwrap_or_default();
+        let s = fs::read_to_string(&config_path).map_err(|e| format!("Read error: {}", e))?;
+        // BUG FIX #5: propagar error de deserialización en lugar de ignorarlo
+        let config: AppConfig =
+            serde_json::from_str(&s).map_err(|e| format!("Config parse error: {}", e))?;
         *state.config.lock().map_err(|e| e.to_string())? = config.clone();
         Ok(config)
     } else {
@@ -303,12 +337,28 @@ pub async fn get_diff_preview(path: String, state: State<'_, AppState>) -> Resul
         .lock()
         .map_err(|e| e.to_string())?
         .smart_threshold_lines;
+
+    // BUG FIX #3: usar --cached para ver el diff del staging,
+    // consistente con el flujo de commit
     let out = Command::new("git")
-        .args(["diff"])
+        .args(["diff", "--cached"])
         .current_dir(&path)
         .output()
         .map_err(|e| format!("Git diff error: {}", e))?;
-    let diff = String::from_utf8_lossy(&out.stdout);
+
+    // Si el staged diff está vacío, intentar con el working tree como fallback
+    let diff_str = String::from_utf8_lossy(&out.stdout);
+    let diff = if diff_str.trim().is_empty() {
+        let out_wt = Command::new("git")
+            .args(["diff"])
+            .current_dir(&path)
+            .output()
+            .map_err(|e| format!("Git diff (working tree) error: {}", e))?;
+        String::from_utf8_lossy(&out_wt.stdout).to_string()
+    } else {
+        diff_str.to_string()
+    };
+
     let stats = analyze_diff(&diff, threshold);
     Ok(DiffStatsPublic {
         files_changed: stats.files_changed,
@@ -333,8 +383,9 @@ pub async fn get_commit_history(state: State<'_, AppState>) -> Result<Vec<Commit
 #[tauri::command]
 pub async fn export_history_csv(state: State<'_, AppState>) -> Result<String> {
     let c = state.config.lock().map_err(|e| e.to_string())?;
-    let mut csv = "timestamp,repo,message,used_llm,files_changed,insertions,deletions,est_tokens\n"
-        .to_string();
+    let mut csv =
+        "timestamp,repo,message,used_llm,files_changed,insertions,deletions,est_tokens\n"
+            .to_string();
     for e in &c.commit_history {
         csv.push_str(&format!(
             "{},{},{},{},{},{},{},{}\n",
@@ -355,6 +406,7 @@ pub async fn export_history_csv(state: State<'_, AppState>) -> Result<String> {
 pub async fn clear_commit_history(state: State<'_, AppState>) -> Result<()> {
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
     c.commit_history.clear();
+    // BUG FIX #1: propagar el error
     persist_config(&c);
     Ok(())
 }
@@ -363,6 +415,7 @@ pub async fn clear_commit_history(state: State<'_, AppState>) -> Result<()> {
 pub async fn add_repo(repo: RepoEntry, state: State<'_, AppState>) -> Result<()> {
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
     c.repos.push(repo);
+    // BUG FIX #1: propagar el error
     persist_config(&c);
     Ok(())
 }
@@ -371,6 +424,7 @@ pub async fn add_repo(repo: RepoEntry, state: State<'_, AppState>) -> Result<()>
 pub async fn remove_repo(id: String, state: State<'_, AppState>) -> Result<()> {
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
     c.repos.retain(|r| r.id != id);
+    // BUG FIX #1: propagar el error
     persist_config(&c);
     Ok(())
 }
@@ -379,10 +433,11 @@ pub async fn remove_repo(id: String, state: State<'_, AppState>) -> Result<()> {
 pub async fn update_repo(repo: RepoEntry, state: State<'_, AppState>) -> Result<()> {
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
     if let Some(r) = c.repos.iter_mut().find(|r| r.id == repo.id) {
-        let old_time = r.last_commit_time; // <-- GUARDAR TIEMPO REAL
+        let old_time = r.last_commit_time;
         *r = repo;
-        r.last_commit_time = old_time; // <-- RESTAURARLO
+        r.last_commit_time = old_time;
     }
+    // BUG FIX #1: propagar el error
     persist_config(&c);
     Ok(())
 }
@@ -404,8 +459,14 @@ pub async fn select_directory(app_handle: tauri::AppHandle) -> Result<String> {
         .file()
         .set_title("Selecciona el repositorio Git")
         .blocking_pick_folder();
+
+    // BUG FIX #4: usar .into_path() para obtener PathBuf real en Tauri v2
+    // evitando el .to_string() sobre FilePath que es inconsistente en Windows
     match path {
-        Some(p) => Ok(p.to_string().replace('\\', "/")),
+        Some(p) => p
+            .into_path()
+            .map(|pb| pb.to_string_lossy().replace('\\', "/"))
+            .map_err(|e| format!("Invalid path: {}", e)),
         None => Err("No folder selected".to_string()),
     }
 }
@@ -424,6 +485,6 @@ pub async fn test_connection(
         &api_key,
         "Reply with exactly the word 'Connected'.",
     )
-    .await
-    .map(|_| "Connection successful!".to_string())
+        .await
+        .map(|_| "Connection successful!".to_string())
 }

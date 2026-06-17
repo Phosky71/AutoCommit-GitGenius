@@ -77,10 +77,8 @@ pub struct RepoEntry {
     pub id: String,
     pub path: String,
     pub interval_minutes: u64,
-    /// Si el timer automatico esta activo para este repo
     #[serde(default)]
     pub timer_enabled: bool,
-    /// Si el repo esta habilitado (visible/activo en la UI)
     pub enabled: bool,
     pub push_enabled: bool,
     pub push_remote: String,
@@ -124,7 +122,6 @@ pub struct AppConfig {
     pub commit_prefix: String,
     pub cooldown_minutes: u64,
     pub human_in_the_loop: bool,
-    /// Tema de la interfaz: "dark" o "light"
     #[serde(default = "default_theme")]
     pub theme: String,
     pub last_successful_commit: u64,
@@ -211,6 +208,17 @@ pub fn now_unix() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
 }
 
+/// Helper nuevo: Sanea los timestamps para que el temporizador (timer.rs)
+/// no se desajuste por un valor persistido en el futuro (desfase de reloj).
+pub fn sanitize_timestamp(ts: u64) -> u64 {
+    let now = now_unix();
+    if ts > now + 60 { // Damos 1 min de margen; si está muy en el futuro, es inválido
+        0
+    } else {
+        ts
+    }
+}
+
 pub fn get_config_path() -> Result<PathBuf> {
     let mut path = dirs::config_dir()
         .ok_or_else(|| "Failed to get config directory".to_string())?;
@@ -221,20 +229,39 @@ pub fn get_config_path() -> Result<PathBuf> {
 }
 
 pub fn mask_api_key(key: &str) -> String {
-    if key.len() <= 4 { return "****".to_string(); }
-    format!("sk-...{}", &key[key.len()-4..])
+    let chars_count = key.chars().count();
+    if chars_count <= 4 { return "****".to_string(); }
+
+    // BUG FIX (nuevo): Evitar panic de slice `&key[..]` por caracteres UTF-8
+    let last_four: String = key.chars().skip(chars_count - 4).collect();
+    format!("sk-...{}", last_four)
 }
 
-pub fn persist_config(config: &AppConfig) {
-    if let Ok(path) = get_config_path() {
-        if let Ok(json) = serde_json::to_string_pretty(config) {
-            let _ = fs::write(path, json);
-        }
-    }
+pub fn persist_config(config: &AppConfig) -> Result<()> {
+    let path = get_config_path()?;
+    let mut temp_path = path.clone();
+    temp_path.set_extension("tmp"); // Usar archivo temporal
+
+    let json = serde_json::to_string_pretty(config)
+        .map_err(|e| format!("JSON serialization error: {}", e))?;
+
+    // BUG FIX #1: Escritura atómica
+    fs::write(&temp_path, json).map_err(|e| format!("Write error: {}", e))?;
+    fs::rename(&temp_path, &path).map_err(|e| format!("Rename error: {}", e))?;
+
+    Ok(())
 }
 
-pub fn push_history(config: &mut AppConfig, entry: CommitHistoryEntry) {
+pub fn push_history(config: &mut AppConfig, entry: CommitHistoryEntry) -> Result<()> {
     config.commit_history.push(entry);
+
+    // BUG FIX (nuevo): Evitar crecimiento infinito del historial
+    // que corrompería el archivo y bloquearía la aplicación por tamaño.
+    if config.commit_history.len() > 1000 {
+        let excess = config.commit_history.len() - 1000;
+        config.commit_history.drain(0..excess);
+    }
+
     config.last_successful_commit = now_unix();
-    persist_config(config);
+    persist_config(config)
 }

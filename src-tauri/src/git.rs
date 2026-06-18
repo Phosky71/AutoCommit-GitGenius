@@ -1,5 +1,6 @@
 use std::process::Command;
 
+// Quitamos SmartMode (si no se usa) o lo traemos, pero lo mantengo por el run_commit_internal
 use crate::config::{
     CommitResult, DiffStatsPublic, LlmProvider, PendingCommit, Result, SmartMode,
 };
@@ -127,14 +128,42 @@ pub async fn run_commit_internal(
         }
     }
 
-    // 1. Comprobar cambios
-    let status = Command::new("git")
-        .args(["status", "--porcelain"])
+    // BUG FIX #2: El `git status` inicial se ha eliminado. Era propenso a
+    // falsos positivos con untracked files vs gitignore.
+    // El flujo correcto es: 1) add, 2) diff --cached, 3) si vacío -> abortar.
+
+    // 1. Stage
+    if !dry_run {
+        let add_status = Command::new("git")
+            .args(["add", "."])
+            .current_dir(path)
+            .status()
+            .map_err(|e| format!("Git add error: {}", e))?;
+
+        if !add_status.success() {
+            return Err(format!("Git add failed with exit code: {}", add_status));
+        }
+    }
+
+    // 2. Diff (y chequeo real de vaciado)
+    let diff_args = if dry_run {
+        vec!["diff"] // Si es dry_run y no hemos hecho add, verificamos working tree
+    } else {
+        vec!["diff", "--cached"]
+    };
+
+    let diff_out = Command::new("git")
+        .args(&diff_args)
         .current_dir(path)
         .output()
-        .map_err(|e| format!("Git status error: {}", e))?;
+        .map_err(|e| format!("Git diff error: {}", e))?;
 
-    if String::from_utf8_lossy(&status.stdout).trim().is_empty() {
+    let diff_content = String::from_utf8_lossy(&diff_out.stdout);
+
+    // BUG FIX #2 (continuación): Si el diff está vacío DESPUÉS del add,
+    // significa que realmente no hay cambios para commitear.
+    // Esto evita invocar al LLM con un diff vacío o lanzar un commit fallido.
+    if diff_content.trim().is_empty() {
         return Ok(CommitResult {
             message: "No changes to commit".to_string(),
             used_llm: false,
@@ -143,29 +172,7 @@ pub async fn run_commit_internal(
         });
     }
 
-    // 2. Stage
-    if !dry_run {
-        Command::new("git")
-            .args(["add", "."])
-            .current_dir(path)
-            .status()
-            .map_err(|e| format!("Git add error: {}", e))?;
-    }
-
-    // 3. Diff
-    let diff_args = if dry_run {
-        vec!["diff"]
-    } else {
-        vec!["diff", "--cached"]
-    };
-    let diff_out = Command::new("git")
-        .args(&diff_args)
-        .current_dir(path)
-        .output()
-        .map_err(|e| format!("Git diff error: {}", e))?;
-    let diff_content = String::from_utf8_lossy(&diff_out.stdout);
-
-    // 4. Analyze
+    // 3. Analyze
     let stats = analyze_diff(&diff_content, smart_threshold_lines);
     let stats_public = DiffStatsPublic {
         files_changed: stats.files_changed,
@@ -174,7 +181,7 @@ pub async fn run_commit_internal(
         estimated_tokens: stats.estimated_tokens,
     };
 
-    // 5. LLM decision
+    // 4. LLM decision
     let (commit_message, used_llm) = match smart_mode {
         SmartMode::Never => (generate_fallback_message(&stats), false),
         SmartMode::Smart => {
@@ -190,39 +197,26 @@ pub async fn run_commit_internal(
         }
     };
 
-    // --- NUEVO FILTRO DE SANITIZACIÓN ---
-    // 1. Tomar solo la primera línea no vacía que no sea un bloque markdown
+    // --- FILTRO DE SANITIZACIÓN ---
     let extracted_line = commit_message
         .lines()
         .find(|l| !l.trim().is_empty() && !l.starts_with("```"))
         .unwrap_or(&commit_message);
 
-    // 2. Limpiar caracteres residuales (comillas, comillas simples, backticks)
     let mut clean_message = extracted_line
         .trim_matches(|c| c == '"' || c == '\'' || c == '`')
         .trim()
         .to_string();
 
-    // Limpiar prefijos indeseados típicos de los LLMs
     if clean_message.to_lowercase().starts_with("here is") || clean_message.to_lowercase().starts_with("commit message:") {
         if let Some(idx) = clean_message.find(':') {
             clean_message = clean_message[idx + 1..].trim().to_string();
         }
     }
-    // ------------------------------------
 
     if !commit_prefix.is_empty() {
         clean_message = format!("{} {}", commit_prefix.trim(), clean_message);
     }
-
-    // let mut clean_message = commit_message
-    //     .trim_matches('"')
-    //     .trim_matches('\'')
-    //     .trim()
-    //     .to_string();
-    // if !commit_prefix.is_empty() {
-    //     clean_message = format!("{} {}", commit_prefix.trim(), clean_message);
-    // }
 
     // Dry run → salir antes de commitear
     if dry_run {
@@ -258,7 +252,7 @@ pub async fn run_commit_internal(
             used_llm,
             diff_stats: Some(stats_public.clone()),
             pending_approval: Some(PendingCommit {
-                message: clean_message,
+                message: clean_message.clone(),
                 used_llm,
                 diff_stats: stats_public,
                 diff_preview,
@@ -267,20 +261,30 @@ pub async fn run_commit_internal(
         });
     }
 
-    // 6. Commit
-    Command::new("git")
+    // 5. Commit
+    let commit_status = Command::new("git")
         .args(["commit", "-m", &clean_message])
         .current_dir(path)
         .status()
         .map_err(|e| format!("Git commit error: {}", e))?;
 
-    // 7. Push opcional
+    if !commit_status.success() {
+        return Err(format!("Git commit failed with exit code: {}", commit_status));
+    }
+
+    // 6. Push opcional
     if push_enabled {
-        Command::new("git")
+        let push_status = Command::new("git")
             .args(["push", push_remote, push_branch])
             .current_dir(path)
             .status()
             .map_err(|e| format!("Git push error: {}", e))?;
+
+        if !push_status.success() {
+            // No hacemos Err aquí porque el commit ya se hizo, pero podrías
+            // querer añadir un evento de error de push en el futuro.
+            println!("Warning: Push failed, but commit was successful");
+        }
     }
 
     Ok(CommitResult {

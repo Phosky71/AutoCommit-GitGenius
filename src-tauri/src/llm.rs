@@ -1,10 +1,18 @@
 use once_cell::sync::Lazy;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 use crate::config::{LlmProvider, Result};
 
-pub static HTTP_CLIENT: Lazy<Client> = Lazy::new(Client::new);
+// AÑADIDO: Configurar un timeout global para el cliente HTTP.
+// Si un LLM local se queda colgado, no bloqueará el hilo de Tokio de Tauri indefinidamente.
+pub static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
+    Client::builder()
+        .timeout(Duration::from_secs(45))
+        .build()
+        .expect("Failed to build HTTP client")
+});
 
 pub const SYSTEM_PROMPT: &str = r#"
 You are a strict Git commit message generator.
@@ -32,18 +40,18 @@ pub struct ChatCompletionRequest {
     pub max_tokens: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Message {
     pub role: String,
     pub content: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ChatCompletionResponse {
     pub choices: Vec<Choice>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Choice {
     pub message: Message,
 }
@@ -56,12 +64,12 @@ pub struct AnthropicRequest {
     pub system: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct AnthropicResponse {
     pub content: Vec<AnthropicContent>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct AnthropicContent {
     pub text: String,
 }
@@ -98,20 +106,24 @@ pub async fn call_llm(
 
         if !resp.status().is_success() {
             return Err(format!(
-                "Anthropic error: {}",
+                "Anthropic error (HTTP {}): {}",
+                resp.status(),
                 resp.text().await.unwrap_or_default()
             ));
         }
-        let parsed: AnthropicResponse = resp
-            .json()
-            .await
-            .map_err(|e| format!("Parse error: {}", e))?;
+
+        // BUG FIX: Leer la respuesta como texto primero para tenerla de contexto en caso de error de parseo
+        let raw_text = resp.text().await.map_err(|e| format!("Failed to read Anthropic response: {}", e))?;
+
+        let parsed: AnthropicResponse = serde_json::from_str(&raw_text)
+            .map_err(|e| format!("Parse error: {}\nRaw response: {}", e, raw_text))?;
+
         return parsed
             .content
             .into_iter()
             .next()
             .map(|c| c.text)
-            .ok_or_else(|| "Anthropic returned no content".to_string());
+            .ok_or_else(|| "Anthropic returned empty content array".to_string());
     }
 
     let endpoint = format!("{}/chat/completions", base_url.trim_end_matches('/'));
@@ -137,7 +149,7 @@ pub async fn call_llm(
     }
     if *provider == LlmProvider::OpenRouter {
         req = req
-            .header("HTTP-Referer", "https://github.com/auto-commit-tauri")
+            .header("HTTP-Referer", "https://github.com/auto-commit-tauri") // Idealmente, cambia a la URL de tu repo real
             .header("X-Title", "Auto Commit");
     }
 
@@ -148,18 +160,22 @@ pub async fn call_llm(
 
     if !resp.status().is_success() {
         return Err(format!(
-            "LLM API error: {}",
+            "LLM API error (HTTP {}): {}",
+            resp.status(),
             resp.text().await.unwrap_or_default()
         ));
     }
-    let parsed: ChatCompletionResponse = resp
-        .json()
-        .await
-        .map_err(|e| format!("Parse error: {}", e))?;
+
+    // BUG FIX: Leer texto en crudo para mejorar los mensajes de error
+    let raw_text = resp.text().await.map_err(|e| format!("Failed to read LLM response: {}", e))?;
+
+    let parsed: ChatCompletionResponse = serde_json::from_str(&raw_text)
+        .map_err(|e| format!("Parse error: {}\nRaw response: {}", e, raw_text))?;
+
     parsed
         .choices
         .into_iter()
         .next()
         .map(|c| c.message.content)
-        .ok_or_else(|| "LLM returned no content".to_string())
+        .ok_or_else(|| "LLM returned no choices".to_string())
 }

@@ -1,10 +1,26 @@
 use std::process::Command;
 
-// Quitamos SmartMode (si no se usa) o lo traemos, pero lo mantengo por el run_commit_internal
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 use crate::config::{
     CommitResult, DiffStatsPublic, LlmProvider, PendingCommit, Result, SmartMode,
 };
 use crate::llm::call_llm;
+
+// ---------- HELPER PARA OCULTAR VENTANA DE CONSOLA EN WINDOWS ----------
+fn git_command(path: &str) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.current_dir(path);
+
+    #[cfg(target_os = "windows")]
+    {
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    cmd
+}
 
 // ---------- DIFF STATS (privado al módulo) ----------
 
@@ -128,15 +144,10 @@ pub async fn run_commit_internal(
         }
     }
 
-    // BUG FIX #2: El `git status` inicial se ha eliminado. Era propenso a
-    // falsos positivos con untracked files vs gitignore.
-    // El flujo correcto es: 1) add, 2) diff --cached, 3) si vacío -> abortar.
-
     // 1. Stage
     if !dry_run {
-        let add_status = Command::new("git")
+        let add_status = git_command(path)
             .args(["add", "."])
-            .current_dir(path)
             .status()
             .map_err(|e| format!("Git add error: {}", e))?;
 
@@ -147,22 +158,18 @@ pub async fn run_commit_internal(
 
     // 2. Diff (y chequeo real de vaciado)
     let diff_args = if dry_run {
-        vec!["diff"] // Si es dry_run y no hemos hecho add, verificamos working tree
+        vec!["diff"]
     } else {
         vec!["diff", "--cached"]
     };
 
-    let diff_out = Command::new("git")
+    let diff_out = git_command(path)
         .args(&diff_args)
-        .current_dir(path)
         .output()
         .map_err(|e| format!("Git diff error: {}", e))?;
 
     let diff_content = String::from_utf8_lossy(&diff_out.stdout);
 
-    // BUG FIX #2 (continuación): Si el diff está vacío DESPUÉS del add,
-    // significa que realmente no hay cambios para commitear.
-    // Esto evita invocar al LLM con un diff vacío o lanzar un commit fallido.
     if diff_content.trim().is_empty() {
         return Ok(CommitResult {
             message: "No changes to commit".to_string(),
@@ -229,9 +236,8 @@ pub async fn run_commit_internal(
     }
 
     // Lista de ficheros cambiados
-    let files_changed_list: Vec<String> = Command::new("git")
+    let files_changed_list: Vec<String> = git_command(path)
         .args(["diff", "--cached", "--name-only"])
-        .current_dir(path)
         .output()
         .map(|o| {
             String::from_utf8_lossy(&o.stdout)
@@ -262,9 +268,8 @@ pub async fn run_commit_internal(
     }
 
     // 5. Commit
-    let commit_status = Command::new("git")
+    let commit_status = git_command(path)
         .args(["commit", "-m", &clean_message])
-        .current_dir(path)
         .status()
         .map_err(|e| format!("Git commit error: {}", e))?;
 
@@ -274,15 +279,12 @@ pub async fn run_commit_internal(
 
     // 6. Push opcional
     if push_enabled {
-        let push_status = Command::new("git")
+        let push_status = git_command(path)
             .args(["push", push_remote, push_branch])
-            .current_dir(path)
             .status()
             .map_err(|e| format!("Git push error: {}", e))?;
 
         if !push_status.success() {
-            // No hacemos Err aquí porque el commit ya se hizo, pero podrías
-            // querer añadir un evento de error de push en el futuro.
             println!("Warning: Push failed, but commit was successful");
         }
     }

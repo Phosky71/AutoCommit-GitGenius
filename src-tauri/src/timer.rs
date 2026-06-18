@@ -3,7 +3,8 @@ use tauri::{AppHandle, Emitter};
 use tokio::time::{interval, Duration};
 use tauri::Manager;
 
-use crate::config::{AppState, CommitHistoryEntry, DiffStatsPublic, Result, now_unix, push_history};
+// Importamos `sanitize_timestamp` que creamos en el archivo anterior
+use crate::config::{AppState, CommitHistoryEntry, DiffStatsPublic, Result, now_unix, push_history, sanitize_timestamp};
 use crate::git::run_commit_internal;
 
 #[tauri::command]
@@ -52,12 +53,16 @@ pub async fn start_auto_commit(
             let now = now_unix();
 
             for repo in &repos {
-                // Solo repos activos
-                if !repo.enabled { continue; }
+                // BUG FIX: Comprobar tanto que el repo exista (enabled)
+                // como que su auto-commit esté activo (timer_enabled)
+                if !repo.enabled || !repo.timer_enabled { continue; }
+
+                // BUG FIX #3: Sanear el timestamp para evitar bloqueos temporales por desajustes de reloj
+                let safe_last_commit = sanitize_timestamp(repo.last_commit_time);
 
                 // Comprobar si ha pasado el intervalo del repo
-                let elapsed_minutes = (now.saturating_sub(repo.last_commit_time)) / 60;
-                if elapsed_minutes < repo.interval_minutes as u64 { continue; }
+                let elapsed_minutes = (now.saturating_sub(safe_last_commit)) / 60;
+                if elapsed_minutes < repo.interval_minutes { continue; }
 
                 let path          = repo.path.clone();
                 let push_enabled  = repo.push_enabled;
@@ -65,13 +70,12 @@ pub async fn start_auto_commit(
                 let push_branch   = repo.push_branch.clone();
                 let commit_prefix = repo.commit_prefix.clone();
                 let cooldown      = repo.cooldown_minutes;
-                let last_commit   = repo.last_commit_time;
 
                 match run_commit_internal(
                     &path, &provider, &base_url, &model, &api_key,
                     &smart_mode, threshold, push_enabled,
                     &push_remote, &push_branch,
-                    &commit_prefix, cooldown, last_commit, false, hitl,
+                    &commit_prefix, cooldown, safe_last_commit, false, hitl,
                 ).await {
                     Ok(r) => {
                         let is_empty = r.message == "No changes to commit"
@@ -79,7 +83,7 @@ pub async fn start_auto_commit(
 
                         if !is_empty {
                             if r.pending_approval.is_some() {
-                                // ← AÑADIDO: Traer la ventana a primer plano y desminimizar
+                                // Traer la ventana a primer plano y desminimizar
                                 if let Some(window) = app_handle.get_webview_window("main") {
                                     let _ = window.unminimize();
                                     let _ = window.set_focus();
@@ -104,54 +108,18 @@ pub async fn start_auto_commit(
                                     if let Some(re) = c.repos.iter_mut().find(|re| re.path == path) {
                                         re.last_commit_time = now_unix();
                                     }
-                                    push_history(&mut c, entry);
+
+                                    // BUG FIX: Manejar la nueva firma Result<()> de push_history
+                                    let _ = push_history(&mut c, entry);
                                 }
                             }
 
-                            // 3. SIEMPRE enviamos el evento a la UI.
+                            // SIEMPRE enviamos el evento a la UI.
                             let _ = app_handle.emit("commit-status", &r);
                         }
                     }
                     Err(e) => { let _ = app_handle.emit("commit-error", &e); }
                 }
-                // match run_commit_internal(
-                //     &path, &provider, &base_url, &model, &api_key,
-                //     &smart_mode, threshold, push_enabled,
-                //     &push_remote, &push_branch,
-                //     &commit_prefix, cooldown, last_commit, false, hitl,
-                // ).await {
-                //     Ok(r) => {
-                //         let skip = r.pending_approval.is_some()
-                //             || r.message == "No changes to commit"
-                //             || r.message.starts_with("Cooldown");
-                //
-                //         if !skip {
-                //             let stats = r.diff_stats.clone().unwrap_or(DiffStatsPublic {
-                //                 files_changed: 0, insertions: 0,
-                //                 deletions: 0, estimated_tokens: 0,
-                //             });
-                //             let entry = CommitHistoryEntry {
-                //                 timestamp: now_unix(),
-                //                 repo_path: path.clone(),
-                //                 message: r.message.clone(),
-                //                 used_llm: r.used_llm,
-                //                 files_changed: stats.files_changed,
-                //                 insertions: stats.insertions,
-                //                 deletions: stats.deletions,
-                //                 estimated_tokens: stats.estimated_tokens,
-                //             };
-                //             // Actualizar last_commit_time del repo
-                //             if let Ok(mut c) = config_arc.lock() {
-                //                 if let Some(re) = c.repos.iter_mut().find(|re| re.path == path) {
-                //                     re.last_commit_time = now_unix();
-                //                 }
-                //                 push_history(&mut c, entry);
-                //             }
-                //             let _ = app_handle.emit("commit-status", &r);
-                //         }
-                //     }
-                //     Err(e) => { let _ = app_handle.emit("commit-error", &e); }
-                // }
             }
         }
     });

@@ -208,26 +208,50 @@ pub async fn run_commit_internal(
         }
     };
 
-    // --- FILTRO DE SANITIZACIÓN ---
-    let extracted_line = commit_message.lines()
-        .find(|l| !l.trim().is_empty() && !l.starts_with("```"))
-        .unwrap_or(&commit_message);
+    // --- FILTRO DE SANITIZACIÓN MULTI-LÍNEA ---
+    let mut clean_lines = Vec::new();
+    let mut is_first_text_line = true;
 
-    let mut clean_message = extracted_line.trim_matches(|c| c == '"' || c == '\'' || c == '`').trim().to_string();
+    for line in commit_message.lines() {
+        let trimmed = line.trim();
 
-    if clean_message.to_lowercase().starts_with("here is") || clean_message.to_lowercase().starts_with("commit message:") {
-        if let Some(idx) = clean_message.find(':') {
-            clean_message = clean_message[idx + 1..].trim().to_string();
+        // Ignoramos bloques markdown si la IA se salta la regla
+        if trimmed.starts_with("```") {
+            continue;
+        }
+
+        if is_first_text_line && !trimmed.is_empty() {
+            let mut first_line = trimmed;
+            let lower = first_line.to_lowercase();
+
+            // Quitamos la típica introducción charlatana de las IAs
+            if lower.starts_with("here is") || lower.starts_with("commit message") {
+                if let Some(idx) = first_line.find(':') {
+                    first_line = first_line[idx + 1..].trim();
+                }
+            }
+            first_line = first_line.trim_matches(|c| c == '"' || c == '\'' || c == '`');
+
+            let final_title = if !commit_prefix.is_empty() {
+                format!("{} {}", commit_prefix.trim(), first_line)
+            } else {
+                first_line.to_string()
+            };
+            clean_lines.push(final_title);
+            is_first_text_line = false;
+        } else if !is_first_text_line {
+            // Empujamos el resto del cuerpo (viñetas, explicaciones por fichero)
+            clean_lines.push(line.to_string());
         }
     }
 
-    if !commit_prefix.is_empty() {
-        clean_message = format!("{} {}", commit_prefix.trim(), clean_message);
-    }
+    let clean_message = clean_lines.join("\n").trim().to_string();
 
+    // Dry run → salir antes de commitear
     if dry_run {
         return Ok(CommitResult {
-            message: format!("[DRY RUN] {}", clean_message),
+            // Añadimos salto de línea para que se lea mejor en la UI
+            message: format!("[DRY RUN]\n{}", clean_message),
             used_llm,
             diff_stats: Some(stats_public),
             pending_approval: None,

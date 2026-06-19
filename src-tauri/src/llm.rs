@@ -15,18 +15,23 @@ pub static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
 });
 
 pub const SYSTEM_PROMPT: &str = r#"
-You are a strict Git commit message generator.
-Analyze the diff and generate a SINGLE LINE commit message using the Conventional Commits standard.
+You are an expert developer and a strict Git commit message generator.
+Analyze the diff and generate a comprehensive commit message using the Conventional Commits standard.
 
 RULES:
-1. Format: <type>(<scope>): <description>
+1. The FIRST LINE must be the title: <type>(<scope>): <description> (under 72 characters).
 2. Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
-3. The description MUST be in lowercase, imperative mood ("add", not "added" or "adds"), and under 72 characters.
-4. NEVER wrap the output in quotes, backticks, code blocks, or markdown.
-5. NEVER output any conversational text, greetings, or explanations.
+3. The title description MUST focus on the WHY and the IMPACT of the change.
+4. If multiple files/modules are changed, you MUST add a blank line after the title, followed by a bulleted list explaining what was changed in each file/module.
+5. NEVER wrap the output in quotes, backticks, code blocks, or markdown (```).
+6. NEVER output conversational text like "Here is your message".
 
-BAD OUTPUT: Here is your message: `feat: add login`
-GOOD OUTPUT: feat(auth): implement JWT login
+EXPECTED OUTPUT FORMAT:
+feat(settings): add git PAT input to enable silent background push
+
+- src/config.rs: add git_token field to AppConfig state
+- src/git.rs: inject token into git remote url to bypass credential helper
+- js/settings.js: add UI input to securely save and load the token
 "#;
 
 // ---------- REQUEST / RESPONSE STRUCTS ----------

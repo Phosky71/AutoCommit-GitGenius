@@ -425,6 +425,7 @@ a,button,[role=button],input,select,textarea{
     color:var(--color-text);
     word-break:break-word;
     min-height:44px;
+    white-space: pre-wrap;
 }
 
 /* ── TEST STATUS ──────────────────────────────────────── */

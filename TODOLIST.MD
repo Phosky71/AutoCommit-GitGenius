@@ -2,10 +2,6 @@
 
 
 
-- [ ] **Fix timers:** Correct current timing issues and ensure they run accurately.
+- [ ] **Migrar comandos a Tokio (Async):** Reemplazar `std::process::Command` por `tokio::process::Command` en las llamadas a Git. Esto hará que la ejecución sea 100% asíncrona y evitará que la interfaz (UI) se congele durante operaciones largas como `git push`.
 
-- [ ] **Handle token request limits:** Fix rate limiting and manage token quotas properly.
-
-- [ ] **Fix history information:** Update and correct the data displayed in the history logs.
-
-- [ ] **Fix API key saving:** Prevent the API key from being cleared or deleted when clicking the "save changes" button.
+- [ ] **Actualizar README.MD**

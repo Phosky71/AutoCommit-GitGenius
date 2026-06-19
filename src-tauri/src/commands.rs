@@ -111,7 +111,7 @@ pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<Comm
         if let Some(r) = c.repos.iter_mut().find(|r| r.path == path) {
             r.last_commit_time = now_unix();
         }
-        push_history(&mut c, entry);
+        push_history(&mut c, entry)?;
     }
     Ok(result)
 }
@@ -210,7 +210,7 @@ pub async fn confirm_commit(
     if let Some(r) = c.repos.iter_mut().find(|r| r.path == path) {
         r.last_commit_time = now_unix();
     }
-    push_history(&mut c, entry);
+    push_history(&mut c, entry)?;
 
     Ok(CommitResult {
         message,
@@ -268,7 +268,7 @@ pub async fn save_config(config: AppConfig, state: State<'_, AppState>) -> Resul
     *app_config = config;
     app_config.commit_history = history;
     app_config.last_successful_commit = last;
-    persist_config(&app_config);
+    persist_config(&app_config)?;
     Ok(())
 }
 
@@ -404,7 +404,7 @@ pub async fn export_history_csv(state: State<'_, AppState>) -> Result<String> {
 pub async fn clear_commit_history(state: State<'_, AppState>) -> Result<()> {
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
     c.commit_history.clear();
-    persist_config(&c);
+    persist_config(&c)?;
     Ok(())
 }
 
@@ -412,7 +412,7 @@ pub async fn clear_commit_history(state: State<'_, AppState>) -> Result<()> {
 pub async fn add_repo(repo: RepoEntry, state: State<'_, AppState>) -> Result<()> {
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
     c.repos.push(repo);
-    persist_config(&c);
+    persist_config(&c)?;
     Ok(())
 }
 
@@ -420,7 +420,7 @@ pub async fn add_repo(repo: RepoEntry, state: State<'_, AppState>) -> Result<()>
 pub async fn remove_repo(id: String, state: State<'_, AppState>) -> Result<()> {
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
     c.repos.retain(|r| r.id != id);
-    persist_config(&c);
+    persist_config(&c)?;
     Ok(())
 }
 
@@ -432,7 +432,7 @@ pub async fn update_repo(repo: RepoEntry, state: State<'_, AppState>) -> Result<
         *r = repo;
         r.last_commit_time = old_time;
     }
-    persist_config(&c);
+    persist_config(&c)?;
     Ok(())
 }
 

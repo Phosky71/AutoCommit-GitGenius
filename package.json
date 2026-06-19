@@ -1,6 +1,6 @@
 {
   "name": "autocommit-gitgenius",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "AutoCommit con IA",
   "type": "module",
   "scripts": {

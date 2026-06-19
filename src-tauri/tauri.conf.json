@@ -1,6 +1,6 @@
 {
   "productName": "AutoCommit",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "identifier": "com.operiasystems.auto-commit",
   "build": {
     "frontendDist": "../frontend"

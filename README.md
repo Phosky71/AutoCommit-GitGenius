@@ -283,7 +283,7 @@ The project follows a clear desktop application architecture:
 
 ┌─────────────────────────────────────────────┐
 │ Tauri WebView (UI) │
-│ HTML + CSS + JavaScript (app.js) │
+│ HTML + CSS + JavaScript (main.js) │
 └─────────────────────┬───────────────────────┘
 │ IPC (Tauri commands)
 ┌─────────────────────▼───────────────────────┐
@@ -395,7 +395,7 @@ AutoCommit-GitGenius/
 │   └── workflows/
 │       └── release.yml          # Multi-platform build on v* tags
 ├── frontend/
-│   ├── app.js                   # All UI logic, Tauri IPC calls, modals, events
+│   ├── js/main.js                   # All UI logic, Tauri IPC calls, modals, events
 │   ├── index.html               # App shell: sidebar + panels
 │   └── style.css                # Design system, dark/light themes, CSS variables
 ├── src-tauri/
@@ -677,7 +677,7 @@ Historial local con estadísticas resumidas (commits totales, generados por IA, 
 
 ┌─────────────────────────────────────────────┐
 │ Tauri WebView (UI) │
-│ HTML + CSS + JavaScript (app.js) │
+│ HTML + CSS + JavaScript (main.js) │
 └─────────────────────┬───────────────────────┘
 │ IPC (comandos Tauri)
 ┌─────────────────────▼───────────────────────┐
@@ -782,7 +782,7 @@ AutoCommit-GitGenius/
 │   └── workflows/
 │       └── release.yml          # Build multiplataforma en tags v*
 ├── frontend/
-│   ├── app.js                   # Lógica completa de UI, llamadas IPC, modales, eventos
+│   ├── js/main.js                   # Lógica completa de UI, llamadas IPC, modales, eventos
 │   ├── index.html               # Shell de la app: sidebar + paneles
 │   └── style.css                # Sistema de diseño, temas dark/light, variables CSS
 ├── src-tauri/

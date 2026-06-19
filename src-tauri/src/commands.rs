@@ -106,7 +106,7 @@ pub async fn confirm_commit(
     tag: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<CommitResult> {
-    let (push_remote, push_branch, git_token) = { // FIX 1
+    let (push_remote, push_branch, git_token) = {
         let c = state.config.lock().map_err(|e| e.to_string())?;
         let repo = c.repos.iter().find(|r| r.path == path);
         (
@@ -116,94 +116,88 @@ pub async fn confirm_commit(
         )
     };
 
+    // EL NUEVO BLOQUEO: Si quiere hacer push pero no hay token, cortamos la ejecución.
+    if push_enabled && git_token.trim().is_empty() {
+        return Err("Git Token is required for pushing. Please add it in Settings, or disable Push.".to_string());
+    }
+
     let add_status = git_command(&path).args(["add", "."]).status()
         .map_err(|e| format!("Git add error: {}", e))?;
-
-    if !add_status.success() {
-        return Err(format!("Git add failed with status: {}", add_status));
-    }
+    if !add_status.success() { return Err(format!("Git add failed: {}", add_status)); }
 
     let diff_check = git_command(&path).args(["diff", "--cached", "--quiet"]).status()
         .map_err(|e| format!("Git diff check error: {}", e))?;
+    if diff_check.success() { return Err("No staged changes to commit".to_string()); }
 
-    if diff_check.success() {
-        return Err("No staged changes to commit".to_string());
-    }
-
+    // Commit
     let commit_status = git_command(&path).args(["commit", "-m", &message]).status()
         .map_err(|e| format!("Git commit error: {}", e))?;
+    if !commit_status.success() { return Err(format!("Git commit failed: {}", commit_status)); }
 
-    if !commit_status.success() {
-        return Err(format!("Git commit failed with status: {}", commit_status));
-    }
-
+    // Tag
     if let Some(t) = &tag {
         let tag_status = git_command(&path).args(["tag", t]).status()
             .map_err(|e| format!("Git tag error: {}", e))?;
-        if !tag_status.success() {
-            return Err(format!("Git tag failed with status: {}", tag_status));
-        }
+        if !tag_status.success() { return Err(format!("Git tag failed: {}", tag_status)); }
     }
 
-    // FIX 1: Bloqueo de ventana en el push manual de la UI
+    let mut final_message = message.clone();
+
+    // Push (Con el Token obligatorio inyectado)
     if push_enabled {
-        let mut target_url = push_remote.clone();
-        if let Ok(out) = git_command(&path).args(["remote", "get-url", &push_remote]).output() {
+        let mut push_args = Vec::new();
+        let mut target_remote = push_remote.clone();
+
+        // Usamos vec! para evitar el error [E0282] de tipos en el array
+        let remote_args = vec!["remote", "get-url", &push_remote];
+        if let Ok(out) = git_command(&path).args(&remote_args).output() {
             let url = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if !url.is_empty() { target_url = url; }
+            if url.starts_with("https://") {
+                target_remote = url.replacen("https://", &format!("https://{}@", git_token.trim()), 1);
+                push_args.push("-c".to_string());
+                push_args.push("credential.helper=".to_string());
+            }
         }
 
-        if !git_token.is_empty() && target_url.starts_with("https://") {
-            target_url = target_url.replacen("https://", &format!("https://{}@", git_token), 1);
-        }
+        push_args.push("push".to_string());
+        push_args.push(target_remote.clone());
 
-        let push_status = git_command(&path)
-            .args(["-c", "credential.helper=", "push", &target_url, &push_branch])
-            .status()
+        // Hacemos el push de la rama
+        let mut branch_args = push_args.clone();
+        branch_args.push(push_branch.clone());
+
+        let push_status = git_command(&path).args(&branch_args).status()
             .map_err(|e| format!("Git push error: {}", e))?;
 
         if !push_status.success() {
-            return Err(format!("Git push failed with status: {}", push_status));
-        }
-    }
+            final_message = format!("{} (⚠️ Push failed: Check Token permissions)", final_message);
+        } else if let Some(t) = &tag {
+            // Hacemos el push del tag
+            let mut tag_args = push_args.clone();
+            tag_args.push(t.clone());
 
-    if let Some(t) = &tag {
-        let mut target_url = push_remote.clone();
-        if let Ok(out) = git_command(&path).args(["remote", "get-url", &push_remote]).output() {
-            let url = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if !url.is_empty() { target_url = url; }
-        }
+            let push_tag_status = git_command(&path).args(&tag_args).status()
+                .map_err(|e| format!("Git push tag error: {}", e))?;
 
-        if !git_token.is_empty() && target_url.starts_with("https://") {
-            target_url = target_url.replacen("https://", &format!("https://{}@", git_token), 1);
-        }
-
-        let push_tag_status = git_command(&path)
-            .args(["-c", "credential.helper=", "push", &target_url, t])
-            .status()
-            .map_err(|e| format!("Git push tag error: {}", e))?;
-
-        if !push_tag_status.success() {
-            return Err(format!("Git push tag failed with status: {}", push_tag_status));
+            if !push_tag_status.success() {
+                final_message = format!("{} (⚠️ Tag push failed)", final_message);
+            }
         }
     }
 
     let entry = CommitHistoryEntry {
         timestamp: now_unix(),
         repo_path: path.clone(),
-        message: message.clone(),
+        message: final_message.clone(),
         used_llm,
         files_changed: 0, insertions: 0, deletions: 0, estimated_tokens: 0,
     };
+
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
-    if let Some(r) = c.repos.iter_mut().find(|r| r.path == path) {
-        r.last_commit_time = now_unix();
-    }
+    if let Some(r) = c.repos.iter_mut().find(|r| r.path == path) { r.last_commit_time = now_unix(); }
     push_history(&mut c, entry)?;
 
-    Ok(CommitResult {
-        message, used_llm: false, diff_stats: None, pending_approval: None,
-    })
+    Ok(CommitResult { message: final_message, used_llm: false, diff_stats: None, pending_approval: None })
 }
 
 #[tauri::command]
@@ -399,4 +393,27 @@ pub async fn test_connection(
 ) -> Result<String> {
     call_llm(&provider, &base_url, &model, &api_key, "Reply with exactly the word 'Connected'.").await
         .map(|_| "Connection successful!".to_string())
+}
+
+#[tauri::command]
+pub async fn open_url(url: String) -> crate::config::Result<()> {
+    // En Windows usa rundll32 que es seguro y no abre ventanas de consola
+    #[cfg(target_os = "windows")]
+    let _ = std::process::Command::new("rundll32")
+        .args(["url.dll,FileProtocolHandler", &url])
+        .spawn();
+
+    // En macOS usa el comando 'open'
+    #[cfg(target_os = "macos")]
+    let _ = std::process::Command::new("open")
+        .arg(&url)
+        .spawn();
+
+    // En Linux usa 'xdg-open'
+    #[cfg(target_os = "linux")]
+    let _ = std::process::Command::new("xdg-open")
+        .arg(&url)
+        .spawn();
+
+    Ok(())
 }

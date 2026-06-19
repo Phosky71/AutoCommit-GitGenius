@@ -189,16 +189,23 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label" for="cfg-git-token">Git Access Token (PAT) <span style="font-weight:400;text-transform:none">(optional)</span></label>
+                                <label class="form-label" for="cfg-git-token">Git Token / App Password <span style="font-weight:400;text-transform:none">(optional)</span></label>
                                 <div class="input-with-btn">
-                                    <input id="cfg-git-token" class="form-input" type="password" placeholder="ghp_... (For silent background push)">
+                                    <input id="cfg-git-token" class="form-input" type="password" placeholder="ghp_... or username:password">
                                     <button id="btn-toggle-gittoken" class="btn btn-secondary" type="button" title="Show/hide key">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                                         </svg>
                                     </button>
                                 </div>
-                                <p class="form-hint">Bypasses the GitHub interactive login window.</p>
+                                <p class="form-hint">
+                                    Required for silent push. Use a <strong>PAT</strong> for GitHub/GitLab, or <code>username:app_password</code> for Bitbucket.
+                                </p>
+                                <div class="provider-links" style="display: flex; gap: 12px; margin-top: 8px; font-size: var(--text-xs);">
+                                    <a href="#" id="link-github-token" style="color: var(--color-primary); text-decoration: none;">GitHub Token &rarr;</a>
+                                    <a href="#" id="link-gitlab-token" style="color: var(--color-primary); text-decoration: none;">GitLab Token &rarr;</a>
+                                    <a href="#" id="link-bitbucket-token" style="color: var(--color-primary); text-decoration: none;">Bitbucket Password &rarr;</a>
+                                </div>
                             </div>
 
                             <div class="toggle-row">

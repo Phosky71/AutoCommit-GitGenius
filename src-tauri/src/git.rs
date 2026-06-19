@@ -245,7 +245,7 @@ pub async fn run_commit_internal(
         }
     }
 
-    let clean_message = clean_lines.join("\n").trim().to_string();
+    let mut clean_message = clean_lines.join("\n").trim().to_string();
 
     // Dry run → salir antes de commitear
     if dry_run {
@@ -288,25 +288,48 @@ pub async fn run_commit_internal(
         return Err(format!("Git commit failed with exit code: {}", commit_status));
     }
 
-    // 6. Push opcional
+    // 6. Push opcional con Token Obligatorio
     if push_enabled {
-        let mut target_url = push_remote.to_string();
+        if git_token.trim().is_empty() {
+            // Si no hay token, avisamos en el historial pero NO fallamos el proceso
+            clean_message = format!("{} (⚠️ Push skipped: Git Token required)", clean_message);
+        } else {
+            let mut push_args = Vec::new();
+            let mut target_remote = push_remote.to_string();
 
-        if let Ok(out) = git_command(path).args(["remote", "get-url", push_remote]).output() {
-            let url = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if !url.is_empty() { target_url = url; }
-        }
+            // Usamos vec! para evitar el error [E0282]
+            let remote_args = vec!["remote", "get-url", push_remote];
+            if let Ok(out) = git_command(path).args(&remote_args).output() { // (o sin .await si dejaste el síncrono)
+                let url = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if url.starts_with("https://") {
+                    // Quitamos el https:// inicial
+                    let without_scheme = url.trim_start_matches("https://");
 
-        if !git_token.is_empty() && target_url.starts_with("https://") {
-            target_url = target_url.replacen("https://", &format!("https://{}@", git_token), 1);
-        }
+                    // Si la URL ya tiene un "usuario@" o "usuario:password@", lo eliminamos para no duplicar
+                    let host_and_path = match without_scheme.find('@') {
+                        Some(idx) => &without_scheme[idx + 1..],
+                        None => without_scheme,
+                    };
 
-        let push_status = git_command(path)
-            .args(["-c", "credential.helper=", "push", &target_url, push_branch]).status()
-            .map_err(|e| format!("Git push error: {}", e))?;
+                    // Ensamblamos la URL universal limpia
+                    target_remote = format!("https://{}@{}", git_token.trim(), host_and_path);
 
-        if !push_status.success() {
-            println!("Warning: Push failed, but commit was successful");
+                    push_args.push("-c".to_string());
+                    push_args.push("credential.helper=".to_string());
+                }
+            }
+
+            push_args.push("push".to_string());
+            push_args.push(target_remote);
+            push_args.push(push_branch.to_string());
+
+            // Al remover el .await arreglamos el error [E0277]
+            let push_status = git_command(path).args(&push_args).status()
+                .map_err(|e| format!("Git push error: {}", e))?;
+
+            if !push_status.success() {
+                clean_message = format!("{} (⚠️ Push failed: Invalid Token or Branch)", clean_message);
+            }
         }
     }
 

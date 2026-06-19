@@ -38,6 +38,7 @@ fn main() {
             stop_auto_commit,
             select_directory,
             test_connection,
+            open_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

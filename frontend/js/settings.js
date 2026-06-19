@@ -16,6 +16,29 @@ export async function initSettings() {
         input.type = input.type === 'password' ? 'text' : 'password';
     });
 
+    const openLink = (url) => {
+        if (window.__TAURI__ && window.__TAURI__.core) {
+            window.__TAURI__.core.invoke('open_url', { url }).catch(() => window.open(url, '_blank'));
+        } else {
+            window.open(url, '_blank');
+        }
+    };
+
+    document.getElementById('link-github-token').addEventListener('click', (e) => {
+        e.preventDefault();
+        openLink("https://github.com/settings/tokens/new?scopes=repo&description=AutoCommit+App");
+    });
+
+    document.getElementById('link-gitlab-token').addEventListener('click', (e) => {
+        e.preventDefault();
+        openLink("https://gitlab.com/-/profile/personal_access_tokens");
+    });
+
+    document.getElementById('link-bitbucket-token').addEventListener('click', (e) => {
+        e.preventDefault();
+        openLink("https://bitbucket.org/account/settings/app-passwords/new");
+    });
+
     document.querySelectorAll('.smart-mode-ctrl .segment-btn').forEach(btn =>
         btn.addEventListener('click', () => setSmartMode(btn.dataset.val))
     );

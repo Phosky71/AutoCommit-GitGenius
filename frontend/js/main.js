@@ -49,7 +49,9 @@ api.listen('commit-status', ev => {
         return;
     }
     const tag = r.used_llm ? '🤖 ' : '⚙️ ';
-    dom.toast(`${tag}${r.message}`, 'success', 5000);
+    const shortMessage = r.message.split('\n')[0];
+    dom.toast(`${tag}${shortMessage}`, 'success', 5000);
+
     loadRepos();
     if (currentSection === 'history') loadHistory();
 });

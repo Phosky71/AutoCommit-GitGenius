@@ -209,7 +209,8 @@ export async function commitNow(id, path) {
         } else if (result.pending_approval) {
             openApprovalModal(path, result.pending_approval);
         } else {
-            dom.toast(`Committed: ${result.message}`, 'success', 5000);
+            const shortMessage = result.message.split('\n')[0];
+            dom.toast(`Committed: ${shortMessage}`, 'success', 5000);
             loadRepos();
         }
     } catch (e) { dom.toast(`Commit failed: ${e}`, 'error'); }

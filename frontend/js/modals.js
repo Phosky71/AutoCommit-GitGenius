@@ -246,7 +246,8 @@ async function confirmApproval() {
         });
 
         document.getElementById('modal-approval').classList.remove('open');
-        dom.toast(`Committed: ${result.message}`, 'success', 5000);
+        const shortMessage = result.message.split('\n')[0];
+        dom.toast(`Committed: ${shortMessage}`, 'success', 5000);
         loadRepos();
 
         // Comprobar la sección activa desde el main es algo complejo por los imports circulares,

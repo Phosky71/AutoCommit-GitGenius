@@ -63,10 +63,11 @@ async function loadSettings() {
         const hitlEl = document.getElementById('cfg-human-in-the-loop');
         if (hitlEl) hitlEl.checked = humanInTheLoop;
 
-        const maskedKey = await api.getMaskedApiKey();
-        if (maskedKey && maskedKey !== 'sk-...') {
-            document.getElementById('cfg-api-key').placeholder = maskedKey;
-        }
+        // const maskedKey = await api.getMaskedApiKey();
+        // if (maskedKey && maskedKey !== 'sk-...') {
+        //     document.getElementById('cfg-api-key').placeholder = maskedKey;
+        // }
+        document.getElementById('cfg-api-key').value = cfg.llm_api_key || '';
 
         setSmartMode(cfg.smart_mode || 'smart');
     } catch (e) { console.error('loadSettings', e); }
@@ -86,7 +87,6 @@ async function saveSettings() {
         const apiKey = document.getElementById('cfg-api-key').value.trim();
         if (apiKey) cfg.llm_api_key = apiKey;
 
-        // FIX 1: Guardar Git Token
         cfg.git_token = document.getElementById('cfg-git-token').value.trim();
 
         cfg.smart_mode = smartMode;
@@ -97,10 +97,10 @@ async function saveSettings() {
         await api.saveConfig(cfg);
         dom.toast('Settings saved', 'success');
 
-        if (apiKey) {
-            document.getElementById('cfg-api-key').value = '';
-            document.getElementById('cfg-api-key').placeholder = 'sk-…';
-        }
+        // if (apiKey) {
+        //     document.getElementById('cfg-api-key').value = '';
+        //     document.getElementById('cfg-api-key').placeholder = 'sk-…';
+        // }
     } catch (e) { dom.toast('Failed to save settings: ' + e, 'error'); }
     finally { btn.disabled = false; }
 }

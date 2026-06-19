@@ -9,7 +9,7 @@ use crate::config::{
 use crate::llm::call_llm;
 
 // ---------- HELPER PARA OCULTAR VENTANA DE CONSOLA EN WINDOWS ----------
-fn git_command(path: &str) -> Command {
+pub fn git_command(path: &str) -> Command {
     let mut cmd = Command::new("git");
     cmd.current_dir(path);
 
@@ -30,6 +30,7 @@ pub struct DiffStats {
     pub insertions: usize,
     pub deletions: usize,
     pub is_significant: bool,
+    pub is_too_large: bool, // FIX: Nuevo cortocircuito de seguridad
     pub estimated_tokens: usize,
 }
 
@@ -48,11 +49,14 @@ pub fn analyze_diff(diff: &str, threshold_lines: u64) -> DiffStats {
     }
     let total = (insertions + deletions) as u64;
     let prompt_overhead_tokens = 95;
+
     DiffStats {
         files_changed,
         insertions,
         deletions,
         is_significant: total >= threshold_lines || files_changed >= 3,
+        // FIX: Cortocircuito. Si hay más de 40 archivos o 3000 líneas, evitamos el LLM.
+        is_too_large: files_changed > 40 || total > 3000,
         estimated_tokens: (diff.len() / 4) + prompt_overhead_tokens,
     }
 }
@@ -86,11 +90,7 @@ pub async fn llm_commit_message(
     diff_content: &str,
     stats: &DiffStats,
 ) -> (String, bool) {
-    let max_diff = if provider.requires_api_key() {
-        16_000
-    } else {
-        8_000
-    };
+    let max_diff = if provider.requires_api_key() { 16_000 } else { 8_000 };
     let diff_text = if diff_content.len() > max_diff {
         format!("(Diff truncated)...\n{}", &diff_content[..max_diff])
     } else {
@@ -125,6 +125,7 @@ pub async fn run_commit_internal(
     last_commit_time: u64,
     dry_run: bool,
     human_in_the_loop: bool,
+    git_token: &str,
 ) -> Result<CommitResult> {
     use crate::config::now_unix;
 
@@ -144,11 +145,9 @@ pub async fn run_commit_internal(
         }
     }
 
-    // 1. Stage
+    // 1. Stage (solo si no es dry run)
     if !dry_run {
-        let add_status = git_command(path)
-            .args(["add", "."])
-            .status()
+        let add_status = git_command(path).args(["add", "."]).status()
             .map_err(|e| format!("Git add error: {}", e))?;
 
         if !add_status.success() {
@@ -156,16 +155,18 @@ pub async fn run_commit_internal(
         }
     }
 
-    // 2. Diff (y chequeo real de vaciado)
+    // 2. Diff (FIX: Manejo del Dry Run para detectar cambios staged + unstaged)
     let diff_args = if dry_run {
-        vec!["diff"]
+        // Comprobamos si HEAD existe (si no es el primer commit del repo)
+        let has_head = git_command(path).args(["rev-parse", "--verify", "HEAD"])
+            .output().map(|o| o.status.success()).unwrap_or(false);
+
+        if has_head { vec!["diff", "HEAD"] } else { vec!["diff"] }
     } else {
         vec!["diff", "--cached"]
     };
 
-    let diff_out = git_command(path)
-        .args(&diff_args)
-        .output()
+    let diff_out = git_command(path).args(&diff_args).output()
         .map_err(|e| format!("Git diff error: {}", e))?;
 
     let diff_content = String::from_utf8_lossy(&diff_out.stdout);
@@ -188,32 +189,31 @@ pub async fn run_commit_internal(
         estimated_tokens: stats.estimated_tokens,
     };
 
-    // 4. LLM decision
-    let (commit_message, used_llm) = match smart_mode {
-        SmartMode::Never => (generate_fallback_message(&stats), false),
-        SmartMode::Smart => {
-            if stats.is_significant {
-                llm_commit_message(provider, base_url, model, api_key, &diff_content, &stats)
-                    .await
-            } else {
-                (generate_fallback_message(&stats), false)
+    // 4. LLM decision (FIX: Cortocircuito si es demasiado masivo)
+    let (commit_message, used_llm) = if stats.is_too_large {
+        (generate_fallback_message(&stats), false)
+    } else {
+        match smart_mode {
+            SmartMode::Never => (generate_fallback_message(&stats), false),
+            SmartMode::Smart => {
+                if stats.is_significant {
+                    llm_commit_message(provider, base_url, model, api_key, &diff_content, &stats).await
+                } else {
+                    (generate_fallback_message(&stats), false)
+                }
             }
-        }
-        SmartMode::Always => {
-            llm_commit_message(provider, base_url, model, api_key, &diff_content, &stats).await
+            SmartMode::Always => {
+                llm_commit_message(provider, base_url, model, api_key, &diff_content, &stats).await
+            }
         }
     };
 
     // --- FILTRO DE SANITIZACIÓN ---
-    let extracted_line = commit_message
-        .lines()
+    let extracted_line = commit_message.lines()
         .find(|l| !l.trim().is_empty() && !l.starts_with("```"))
         .unwrap_or(&commit_message);
 
-    let mut clean_message = extracted_line
-        .trim_matches(|c| c == '"' || c == '\'' || c == '`')
-        .trim()
-        .to_string();
+    let mut clean_message = extracted_line.trim_matches(|c| c == '"' || c == '\'' || c == '`').trim().to_string();
 
     if clean_message.to_lowercase().starts_with("here is") || clean_message.to_lowercase().starts_with("commit message:") {
         if let Some(idx) = clean_message.find(':') {
@@ -225,7 +225,6 @@ pub async fn run_commit_internal(
         clean_message = format!("{} {}", commit_prefix.trim(), clean_message);
     }
 
-    // Dry run → salir antes de commitear
     if dry_run {
         return Ok(CommitResult {
             message: format!("[DRY RUN] {}", clean_message),
@@ -235,23 +234,13 @@ pub async fn run_commit_internal(
         });
     }
 
-    // Lista de ficheros cambiados
     let files_changed_list: Vec<String> = git_command(path)
-        .args(["diff", "--cached", "--name-only"])
-        .output()
-        .map(|o| {
-            String::from_utf8_lossy(&o.stdout)
-                .lines()
-                .map(|l| l.trim().to_string())
-                .filter(|l| !l.is_empty())
-                .collect()
-        })
+        .args(["diff", "--cached", "--name-only"]).output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).lines().map(|l| l.trim().to_string()).filter(|l| !l.is_empty()).collect())
         .unwrap_or_default();
 
-    // Primeras 60 líneas del diff como preview
     let diff_preview: String = diff_content.lines().take(60).collect::<Vec<_>>().join("\n");
 
-    // Human in the loop → devolver pending antes de commitear
     if human_in_the_loop {
         return Ok(CommitResult {
             message: clean_message.clone(),
@@ -268,9 +257,7 @@ pub async fn run_commit_internal(
     }
 
     // 5. Commit
-    let commit_status = git_command(path)
-        .args(["commit", "-m", &clean_message])
-        .status()
+    let commit_status = git_command(path).args(["commit", "-m", &clean_message]).status()
         .map_err(|e| format!("Git commit error: {}", e))?;
 
     if !commit_status.success() {
@@ -279,9 +266,19 @@ pub async fn run_commit_internal(
 
     // 6. Push opcional
     if push_enabled {
+        let mut target_url = push_remote.to_string();
+
+        if let Ok(out) = git_command(path).args(["remote", "get-url", push_remote]).output() {
+            let url = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !url.is_empty() { target_url = url; }
+        }
+
+        if !git_token.is_empty() && target_url.starts_with("https://") {
+            target_url = target_url.replacen("https://", &format!("https://{}@", git_token), 1);
+        }
+
         let push_status = git_command(path)
-            .args(["push", push_remote, push_branch])
-            .status()
+            .args(["-c", "credential.helper=", "push", &target_url, push_branch]).status()
             .map_err(|e| format!("Git push error: {}", e))?;
 
         if !push_status.success() {

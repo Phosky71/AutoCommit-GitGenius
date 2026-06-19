@@ -10,6 +10,12 @@ export async function initSettings() {
     document.getElementById('btn-toggle-apikey').addEventListener('click', toggleApiKeyVisibility);
     document.getElementById('btn-test').addEventListener('click', testConnection);
 
+    // FIX 1: Evento para mostrar/ocultar el Token de Git
+    document.getElementById('btn-toggle-gittoken').addEventListener('click', () => {
+        const input = document.getElementById('cfg-git-token');
+        input.type = input.type === 'password' ? 'text' : 'password';
+    });
+
     document.querySelectorAll('.smart-mode-ctrl .segment-btn').forEach(btn =>
         btn.addEventListener('click', () => setSmartMode(btn.dataset.val))
     );
@@ -26,6 +32,9 @@ async function loadSettings() {
         document.getElementById('cfg-base-url').value = cfg.llm_base_url || '';
         document.getElementById('cfg-model').value = cfg.llm_model_name || '';
         document.getElementById('cfg-threshold').value = cfg.smart_threshold_lines || 10;
+
+        // FIX 1: Cargar Git Token
+        document.getElementById('cfg-git-token').value = cfg.git_token || '';
 
         humanInTheLoop = cfg.human_in_the_loop !== undefined ? cfg.human_in_the_loop : true;
         const hitlEl = document.getElementById('cfg-human-in-the-loop');
@@ -53,6 +62,9 @@ async function saveSettings() {
 
         const apiKey = document.getElementById('cfg-api-key').value.trim();
         if (apiKey) cfg.llm_api_key = apiKey;
+
+        // FIX 1: Guardar Git Token
+        cfg.git_token = document.getElementById('cfg-git-token').value.trim();
 
         cfg.smart_mode = smartMode;
         cfg.smart_threshold_lines = parseInt(document.getElementById('cfg-threshold').value) || 10;

@@ -65,7 +65,7 @@ async function init() {
     });
 
     initModals();
-    initSettings();
+    await initSettings();
     initHistory();
     await initRepos();
 

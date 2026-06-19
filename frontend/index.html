@@ -11,7 +11,6 @@
 <body>
 <div id="app">
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-brand">
             <svg id="brand-logo" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="AutoCommit logo">
@@ -48,7 +47,6 @@
         </nav>
     </aside>
 
-    <!-- MAINa -->
     <div class="main-wrap">
         <header class="topbar">
             <h1 id="topbar-title" class="topbar-title">Repositories</h1>
@@ -64,7 +62,6 @@
 
         <main class="main-content">
 
-            <!-- REPOS PANEL -->
             <section id="panel-repos" class="section-panel active">
                 <div class="section-header">
                     <div>
@@ -97,7 +94,6 @@
                 </div>
             </section>
 
-            <!-- SETTINGS PANEL -->
             <section id="panel-settings" class="section-panel">
                 <div class="section-header">
                     <div>
@@ -107,7 +103,6 @@
                 </div>
                 <div class="settings-grid">
 
-                    <!-- LLM Provider -->
                     <div class="card">
                         <div class="card-header"><span class="settings-section-title">LLM Provider</span></div>
                         <div class="form-grid">
@@ -156,7 +151,6 @@
                         </div>
                     </div>
 
-                    <!-- Smart Mode -->
                     <div class="card">
                         <div class="card-header"><span class="settings-section-title">Smart Mode</span></div>
                         <div class="form-grid">
@@ -184,7 +178,6 @@
                         </div>
                     </div>
 
-                    <!-- Commit Behavior -->
                     <div class="card">
                         <div class="card-header"><span class="settings-section-title">Commit Behaviour</span></div>
                         <div class="form-grid">
@@ -194,6 +187,20 @@
                                 <input id="cfg-prefix" class="form-input" type="text" placeholder="e.g. auto:">
                                 <p class="form-hint">Each repository can override this in its own settings</p>
                             </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="cfg-git-token">Git Access Token (PAT) <span style="font-weight:400;text-transform:none">(optional)</span></label>
+                                <div class="input-with-btn">
+                                    <input id="cfg-git-token" class="form-input" type="password" placeholder="ghp_... (For silent background push)">
+                                    <button id="btn-toggle-gittoken" class="btn btn-secondary" type="button" title="Show/hide key">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="form-hint">Bypasses the GitHub interactive login window.</p>
+                            </div>
+
                             <div class="toggle-row">
                                 <div>
                                     <div class="toggle-row-label">Human in the loop</div>
@@ -204,35 +211,22 @@
                                     <span class="switch-slider"></span>
                                 </label>
                             </div>
-                            <!--              <div class="toggle-row">-->
-                            <!--                <div>-->
-                            <!--                  <div class="toggle-row-label">Auto-start on launch</div>-->
-                            <!--                  <div class="toggle-row-sub">Start enabled repo timers automatically when app opens</div>-->
-                            <!--                </div>-->
-                            <!--                <label class="switch">-->
-                            <!--                  <input id="cfg-auto-start" type="checkbox">-->
-                            <!--                  <span class="switch-slider"></span>-->
-                            <!--                </label>-->
-                            <!--              </div>-->
                         </div>
                     </div>
 
-                </div><!-- /.settings-grid -->
-
-                <div style="margin-top: var(--space-4);">
-                    <button id="btn-save-settings" class="btn btn-primary">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             stroke-width="2">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                            <polyline points="17 21 17 13 7 13 7 21"/>
-                            <polyline points="7 3 7 8 15 8"/>
-                        </svg>
-                        Save settings
-                    </button>
-                </div>
+                </div><div style="margin-top: var(--space-4);">
+                <button id="btn-save-settings" class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Save settings
+                </button>
+            </div>
             </section>
 
-            <!-- HISTORY PANEL -->
             <section id="panel-history" class="section-panel">
                 <div class="section-header">
                     <div>
@@ -288,11 +282,7 @@
             </section>
 
         </main>
-    </div><!-- /.main-wrap -->
-</div><!-- /#app -->
-
-<!-- MODAL — ADD / EDIT REPO -->
-<div id="modal-repo" class="modal-backdrop">
+    </div></div><div id="modal-repo" class="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-repo-title">
         <div class="modal-header">
             <span id="modal-repo-title" class="modal-title">Add Repository</span>
@@ -369,7 +359,6 @@
     </div>
 </div>
 
-<!-- MODAL — DRY RUN -->
 <div id="modal-dryrun" class="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-header">
@@ -403,7 +392,6 @@
     </div>
 </div>
 
-<!-- MODAL — HUMAN IN THE LOOP -->
 <div id="modal-approval" class="modal-backdrop">
     <div class="modal" style="width:min(600px,95vw);" role="dialog" aria-modal="true">
         <div class="modal-header">
@@ -464,7 +452,6 @@
     </div>
 </div>
 
-<!-- TOASTS -->
 <div id="toast-container" aria-live="polite"></div>
 
 <script type="module" src="js/main.js"></script>

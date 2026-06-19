@@ -122,6 +122,11 @@ pub struct AppConfig {
     pub commit_prefix: String,
     pub cooldown_minutes: u64,
     pub human_in_the_loop: bool,
+
+    // FIX 1: Se añade #[serde(default)] para que los viejos config.json no fallen al cargar
+    #[serde(default)]
+    pub git_token: String,
+
     #[serde(default = "default_theme")]
     pub theme: String,
     pub last_successful_commit: u64,
@@ -151,6 +156,7 @@ impl Default for AppConfig {
             commit_prefix: String::new(),
             cooldown_minutes: 5,
             human_in_the_loop: true,
+            git_token: String::new(), // Nuevo campo
             theme: "dark".to_string(),
             last_successful_commit: 0,
             repos: Vec::new(),
@@ -208,15 +214,9 @@ pub fn now_unix() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
 }
 
-/// Helper nuevo: Sanea los timestamps para que el temporizador (timer.rs)
-/// no se desajuste por un valor persistido en el futuro (desfase de reloj).
 pub fn sanitize_timestamp(ts: u64) -> u64 {
     let now = now_unix();
-    if ts > now + 60 { // Damos 1 min de margen; si está muy en el futuro, es inválido
-        0
-    } else {
-        ts
-    }
+    if ts > now + 60 { 0 } else { ts }
 }
 
 pub fn get_config_path() -> Result<PathBuf> {
@@ -232,7 +232,6 @@ pub fn mask_api_key(key: &str) -> String {
     let chars_count = key.chars().count();
     if chars_count <= 4 { return "****".to_string(); }
 
-    // BUG FIX (nuevo): Evitar panic de slice `&key[..]` por caracteres UTF-8
     let last_four: String = key.chars().skip(chars_count - 4).collect();
     format!("sk-...{}", last_four)
 }
@@ -240,12 +239,11 @@ pub fn mask_api_key(key: &str) -> String {
 pub fn persist_config(config: &AppConfig) -> Result<()> {
     let path = get_config_path()?;
     let mut temp_path = path.clone();
-    temp_path.set_extension("tmp"); // Usar archivo temporal
+    temp_path.set_extension("tmp");
 
     let json = serde_json::to_string_pretty(config)
         .map_err(|e| format!("JSON serialization error: {}", e))?;
 
-    // BUG FIX #1: Escritura atómica
     fs::write(&temp_path, json).map_err(|e| format!("Write error: {}", e))?;
     fs::rename(&temp_path, &path).map_err(|e| format!("Rename error: {}", e))?;
 
@@ -255,8 +253,6 @@ pub fn persist_config(config: &AppConfig) -> Result<()> {
 pub fn push_history(config: &mut AppConfig, entry: CommitHistoryEntry) -> Result<()> {
     config.commit_history.push(entry);
 
-    // BUG FIX (nuevo): Evitar crecimiento infinito del historial
-    // que corrompería el archivo y bloquearía la aplicación por tamaño.
     if config.commit_history.len() > 1000 {
         let excess = config.commit_history.len() - 1000;
         config.commit_history.drain(0..excess);

@@ -3,7 +3,6 @@ use tauri::{AppHandle, Emitter};
 use tokio::time::{interval, Duration};
 use tauri::Manager;
 
-// Importamos `sanitize_timestamp` que creamos en el archivo anterior
 use crate::config::{AppState, CommitHistoryEntry, DiffStatsPublic, Result, now_unix, push_history, sanitize_timestamp};
 use crate::git::run_commit_internal;
 
@@ -22,8 +21,8 @@ pub async fn start_auto_commit(
     let config_arc = Arc::clone(&state.config);
 
     tauri::async_runtime::spawn(async move {
-        let mut tick = interval(Duration::from_secs(60)); // tick cada minuto
-        tick.tick().await; // skip tick inmediato
+        let mut tick = interval(Duration::from_secs(60));
+        tick.tick().await;
 
         loop {
             tick.tick().await;
@@ -34,9 +33,8 @@ pub async fn start_auto_commit(
             };
             if !is_running { break; }
 
-            // Leer configuración global + lista de repos
             let (provider, base_url, model, api_key,
-                smart_mode, threshold, hitl, repos) = {
+                smart_mode, threshold, hitl, repos, git_token) = { // FIX 1
                 let Ok(c) = config_arc.lock() else { continue; };
                 (
                     c.provider.clone(),
@@ -47,21 +45,18 @@ pub async fn start_auto_commit(
                     c.smart_threshold_lines,
                     c.human_in_the_loop,
                     c.repos.clone(),
+                    c.git_token.clone(),
                 )
             };
 
             let now = now_unix();
 
             for repo in &repos {
-                // BUG FIX: Comprobar tanto que el repo exista (enabled)
-                // como que su auto-commit esté activo (timer_enabled)
                 if !repo.enabled || !repo.timer_enabled { continue; }
 
-                // BUG FIX #3: Sanear el timestamp para evitar bloqueos temporales por desajustes de reloj
                 let safe_last_commit = sanitize_timestamp(repo.last_commit_time);
-
-                // Comprobar si ha pasado el intervalo del repo
                 let elapsed_minutes = (now.saturating_sub(safe_last_commit)) / 60;
+
                 if elapsed_minutes < repo.interval_minutes { continue; }
 
                 let path          = repo.path.clone();
@@ -76,6 +71,7 @@ pub async fn start_auto_commit(
                     &smart_mode, threshold, push_enabled,
                     &push_remote, &push_branch,
                     &commit_prefix, cooldown, safe_last_commit, false, hitl,
+                    &git_token // FIX 1
                 ).await {
                     Ok(r) => {
                         let is_empty = r.message == "No changes to commit"
@@ -83,13 +79,11 @@ pub async fn start_auto_commit(
 
                         if !is_empty {
                             if r.pending_approval.is_some() {
-                                // Traer la ventana a primer plano y desminimizar
                                 if let Some(window) = app_handle.get_webview_window("main") {
                                     let _ = window.unminimize();
                                     let _ = window.set_focus();
                                 }
                             } else {
-                                // Flujo normal sin HITL: guardar historial
                                 let stats = r.diff_stats.clone().unwrap_or(DiffStatsPublic {
                                     files_changed: 0, insertions: 0,
                                     deletions: 0, estimated_tokens: 0,
@@ -108,13 +102,9 @@ pub async fn start_auto_commit(
                                     if let Some(re) = c.repos.iter_mut().find(|re| re.path == path) {
                                         re.last_commit_time = now_unix();
                                     }
-
-                                    // BUG FIX: Manejar la nueva firma Result<()> de push_history
                                     let _ = push_history(&mut c, entry);
                                 }
                             }
-
-                            // SIEMPRE enviamos el evento a la UI.
                             let _ = app_handle.emit("commit-status", &r);
                         }
                     }

@@ -1,31 +1,12 @@
 use std::fs;
-use std::process::Command;
 use tauri::State;
-use tauri_plugin_dialog::DialogExt;
-
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 
 use crate::config::{
     get_config_path, mask_api_key, now_unix, persist_config, push_history, AppConfig, AppState,
     CommitHistoryEntry, CommitResult, DiffStatsPublic, LlmProvider, RepoEntry, Result,
 };
-use crate::git::{analyze_diff, run_commit_internal};
+use crate::git::{analyze_diff, git_command, run_commit_internal};
 use crate::llm::call_llm;
-
-// ---------- HELPER PARA OCULTAR VENTANA DE CONSOLA EN WINDOWS ----------
-fn git_command(path: &str) -> Command {
-    let mut cmd = Command::new("git");
-    cmd.current_dir(path);
-
-    #[cfg(target_os = "windows")]
-    {
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-        cmd.creation_flags(CREATE_NO_WINDOW);
-    }
-
-    cmd
-}
 
 #[tauri::command]
 pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<CommitResult> {
@@ -43,6 +24,7 @@ pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<Comm
         commit_prefix,
         cooldown,
         last_commit,
+        git_token, // FIX 1
     ) = {
         let c = state.config.lock().map_err(|e| e.to_string())?;
         let repo = c.repos.iter().find(|r| r.path == path);
@@ -65,6 +47,7 @@ pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<Comm
                 .unwrap_or(c.cooldown_minutes),
             repo.map(|r| r.last_commit_time)
                 .unwrap_or(c.last_successful_commit),
+            c.git_token.clone(),
         )
     };
 
@@ -84,6 +67,7 @@ pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<Comm
         last_commit,
         false,
         hitl,
+        &git_token,
     )
         .await?;
 
@@ -92,10 +76,7 @@ pub async fn run_commit(path: String, state: State<'_, AppState>) -> Result<Comm
         && !result.message.starts_with("Cooldown")
     {
         let stats = result.diff_stats.clone().unwrap_or(DiffStatsPublic {
-            files_changed: 0,
-            insertions: 0,
-            deletions: 0,
-            estimated_tokens: 0,
+            files_changed: 0, insertions: 0, deletions: 0, estimated_tokens: 0,
         });
         let entry = CommitHistoryEntry {
             timestamp: now_unix(),
@@ -125,38 +106,31 @@ pub async fn confirm_commit(
     tag: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<CommitResult> {
-    let (push_remote, push_branch) = {
+    let (push_remote, push_branch, git_token) = { // FIX 1
         let c = state.config.lock().map_err(|e| e.to_string())?;
         let repo = c.repos.iter().find(|r| r.path == path);
         (
-            repo.map(|r| r.push_remote.clone())
-                .unwrap_or(c.push_remote.clone()),
-            repo.map(|r| r.push_branch.clone())
-                .unwrap_or(c.push_branch.clone()),
+            repo.map(|r| r.push_remote.clone()).unwrap_or(c.push_remote.clone()),
+            repo.map(|r| r.push_branch.clone()).unwrap_or(c.push_branch.clone()),
+            c.git_token.clone(),
         )
     };
 
-    let add_status = git_command(&path)
-        .args(["add", "."])
-        .status()
+    let add_status = git_command(&path).args(["add", "."]).status()
         .map_err(|e| format!("Git add error: {}", e))?;
 
     if !add_status.success() {
         return Err(format!("Git add failed with status: {}", add_status));
     }
 
-    let diff_check = git_command(&path)
-        .args(["diff", "--cached", "--quiet"])
-        .status()
+    let diff_check = git_command(&path).args(["diff", "--cached", "--quiet"]).status()
         .map_err(|e| format!("Git diff check error: {}", e))?;
 
     if diff_check.success() {
         return Err("No staged changes to commit".to_string());
     }
 
-    let commit_status = git_command(&path)
-        .args(["commit", "-m", &message])
-        .status()
+    let commit_status = git_command(&path).args(["commit", "-m", &message]).status()
         .map_err(|e| format!("Git commit error: {}", e))?;
 
     if !commit_status.success() {
@@ -164,35 +138,53 @@ pub async fn confirm_commit(
     }
 
     if let Some(t) = &tag {
-        let tag_status = git_command(&path)
-            .args(["tag", t])
-            .status()
+        let tag_status = git_command(&path).args(["tag", t]).status()
             .map_err(|e| format!("Git tag error: {}", e))?;
         if !tag_status.success() {
             return Err(format!("Git tag failed with status: {}", tag_status));
         }
     }
 
+    // FIX 1: Bloqueo de ventana en el push manual de la UI
     if push_enabled {
+        let mut target_url = push_remote.clone();
+        if let Ok(out) = git_command(&path).args(["remote", "get-url", &push_remote]).output() {
+            let url = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !url.is_empty() { target_url = url; }
+        }
+
+        if !git_token.is_empty() && target_url.starts_with("https://") {
+            target_url = target_url.replacen("https://", &format!("https://{}@", git_token), 1);
+        }
+
         let push_status = git_command(&path)
-            .args(["push", &push_remote, &push_branch])
+            .args(["-c", "credential.helper=", "push", &target_url, &push_branch])
             .status()
             .map_err(|e| format!("Git push error: {}", e))?;
+
         if !push_status.success() {
             return Err(format!("Git push failed with status: {}", push_status));
         }
     }
 
     if let Some(t) = &tag {
+        let mut target_url = push_remote.clone();
+        if let Ok(out) = git_command(&path).args(["remote", "get-url", &push_remote]).output() {
+            let url = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !url.is_empty() { target_url = url; }
+        }
+
+        if !git_token.is_empty() && target_url.starts_with("https://") {
+            target_url = target_url.replacen("https://", &format!("https://{}@", git_token), 1);
+        }
+
         let push_tag_status = git_command(&path)
-            .args(["push", &push_remote, t])
+            .args(["-c", "credential.helper=", "push", &target_url, t])
             .status()
             .map_err(|e| format!("Git push tag error: {}", e))?;
+
         if !push_tag_status.success() {
-            return Err(format!(
-                "Git push tag failed with status: {}",
-                push_tag_status
-            ));
+            return Err(format!("Git push tag failed with status: {}", push_tag_status));
         }
     }
 
@@ -201,10 +193,7 @@ pub async fn confirm_commit(
         repo_path: path.clone(),
         message: message.clone(),
         used_llm,
-        files_changed: 0,
-        insertions: 0,
-        deletions: 0,
-        estimated_tokens: 0,
+        files_changed: 0, insertions: 0, deletions: 0, estimated_tokens: 0,
     };
     let mut c = state.config.lock().map_err(|e| e.to_string())?;
     if let Some(r) = c.repos.iter_mut().find(|r| r.path == path) {
@@ -213,10 +202,7 @@ pub async fn confirm_commit(
     push_history(&mut c, entry)?;
 
     Ok(CommitResult {
-        message,
-        used_llm: false,
-        diff_stats: None,
-        pending_approval: None,
+        message, used_llm: false, diff_stats: None, pending_approval: None,
     })
 }
 
@@ -224,40 +210,17 @@ pub async fn confirm_commit(
 pub async fn dry_run_commit(path: String, state: State<'_, AppState>) -> Result<CommitResult> {
     let (provider, base_url, model, api_key, smart_mode, threshold, commit_prefix) = {
         let c = state.config.lock().map_err(|e| e.to_string())?;
-        let repo_prefix = c
-            .repos
-            .iter()
-            .find(|r| r.path == path)
-            .map(|r| r.commit_prefix.clone())
-            .unwrap_or_else(|| c.commit_prefix.clone());
+        let repo_prefix = c.repos.iter().find(|r| r.path == path)
+            .map(|r| r.commit_prefix.clone()).unwrap_or_else(|| c.commit_prefix.clone());
         (
-            c.provider.clone(),
-            c.llm_base_url.clone(),
-            c.llm_model_name.clone(),
-            c.llm_api_key.clone(),
-            c.smart_mode.clone(),
-            c.smart_threshold_lines,
-            repo_prefix,
+            c.provider.clone(), c.llm_base_url.clone(), c.llm_model_name.clone(),
+            c.llm_api_key.clone(), c.smart_mode.clone(), c.smart_threshold_lines, repo_prefix,
         )
     };
     run_commit_internal(
-        &path,
-        &provider,
-        &base_url,
-        &model,
-        &api_key,
-        &smart_mode,
-        threshold,
-        false,
-        "origin",
-        "main",
-        &commit_prefix,
-        0,
-        0,
-        true,
-        false,
-    )
-        .await
+        &path, &provider, &base_url, &model, &api_key, &smart_mode, threshold, false,
+        "origin", "main", &commit_prefix, 0, 0, true, false, ""
+    ).await
 }
 
 #[tauri::command]
@@ -335,29 +298,19 @@ pub async fn list_remote_branches(path: String) -> Result<Vec<String>> {
 
 #[tauri::command]
 pub async fn get_diff_preview(path: String, state: State<'_, AppState>) -> Result<DiffStatsPublic> {
-    let threshold = state
-        .config
-        .lock()
-        .map_err(|e| e.to_string())?
-        .smart_threshold_lines;
+    let threshold = state.config.lock().map_err(|e| e.to_string())?.smart_threshold_lines;
 
-    let out = git_command(&path)
-        .args(["diff", "--cached"])
-        .output()
+    let has_head = git_command(&path).args(["rev-parse", "--verify", "HEAD"])
+        .output().map(|o| o.status.success()).unwrap_or(false);
+
+    let args = if has_head { vec!["diff", "HEAD"] } else { vec!["diff"] };
+
+    let out = git_command(&path).args(&args).output()
         .map_err(|e| format!("Git diff error: {}", e))?;
 
     let diff_str = String::from_utf8_lossy(&out.stdout);
-    let diff = if diff_str.trim().is_empty() {
-        let out_wt = git_command(&path)
-            .args(["diff"])
-            .output()
-            .map_err(|e| format!("Git diff (working tree) error: {}", e))?;
-        String::from_utf8_lossy(&out_wt.stdout).to_string()
-    } else {
-        diff_str.to_string()
-    };
 
-    let stats = analyze_diff(&diff, threshold);
+    let stats = analyze_diff(&diff_str, threshold);
     Ok(DiffStatsPublic {
         files_changed: stats.files_changed,
         insertions: stats.insertions,
@@ -368,12 +321,7 @@ pub async fn get_diff_preview(path: String, state: State<'_, AppState>) -> Resul
 
 #[tauri::command]
 pub async fn get_commit_history(state: State<'_, AppState>) -> Result<Vec<CommitHistoryEntry>> {
-    let mut h = state
-        .config
-        .lock()
-        .map_err(|e| e.to_string())?
-        .commit_history
-        .clone();
+    let mut h = state.config.lock().map_err(|e| e.to_string())?.commit_history.clone();
     h.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     Ok(h)
 }
@@ -381,20 +329,13 @@ pub async fn get_commit_history(state: State<'_, AppState>) -> Result<Vec<Commit
 #[tauri::command]
 pub async fn export_history_csv(state: State<'_, AppState>) -> Result<String> {
     let c = state.config.lock().map_err(|e| e.to_string())?;
-    let mut csv =
-        "timestamp,repo,message,used_llm,files_changed,insertions,deletions,est_tokens\n"
-            .to_string();
+    let mut csv = "timestamp,repo,message,used_llm,files_changed,insertions,deletions,est_tokens\n".to_string();
     for e in &c.commit_history {
         csv.push_str(&format!(
             "{},{},{},{},{},{},{},{}\n",
-            e.timestamp,
-            e.repo_path.replace(',', ";"),
+            e.timestamp, e.repo_path.replace(',', ";"),
             format!("\"{}\"", e.message.replace('"', "\"\"").replace('\n', " ")),
-            e.used_llm,
-            e.files_changed,
-            e.insertions,
-            e.deletions,
-            e.estimated_tokens,
+            e.used_llm, e.files_changed, e.insertions, e.deletions, e.estimated_tokens,
         ));
     }
     Ok(csv)
@@ -438,45 +379,24 @@ pub async fn update_repo(repo: RepoEntry, state: State<'_, AppState>) -> Result<
 
 #[tauri::command]
 pub async fn get_repos(state: State<'_, AppState>) -> Result<Vec<RepoEntry>> {
-    Ok(state
-        .config
-        .lock()
-        .map_err(|e| e.to_string())?
-        .repos
-        .clone())
+    Ok(state.config.lock().map_err(|e| e.to_string())?.repos.clone())
 }
 
 #[tauri::command]
 pub async fn select_directory(app_handle: tauri::AppHandle) -> Result<String> {
-    let path = app_handle
-        .dialog()
-        .file()
-        .set_title("Selecciona el repositorio Git")
-        .blocking_pick_folder();
+    use tauri_plugin_dialog::DialogExt;
+    let path = app_handle.dialog().file().set_title("Selecciona el repositorio Git").blocking_pick_folder();
 
     match path {
-        Some(p) => p
-            .into_path()
-            .map(|pb| pb.to_string_lossy().replace('\\', "/"))
-            .map_err(|e| format!("Invalid path: {}", e)),
+        Some(p) => p.into_path().map(|pb| pb.to_string_lossy().replace('\\', "/")).map_err(|e| format!("Invalid path: {}", e)),
         None => Err("No folder selected".to_string()),
     }
 }
 
 #[tauri::command]
 pub async fn test_connection(
-    provider: LlmProvider,
-    base_url: String,
-    model: String,
-    api_key: String,
+    provider: LlmProvider, base_url: String, model: String, api_key: String,
 ) -> Result<String> {
-    call_llm(
-        &provider,
-        &base_url,
-        &model,
-        &api_key,
-        "Reply with exactly the word 'Connected'.",
-    )
-        .await
+    call_llm(&provider, &base_url, &model, &api_key, "Reply with exactly the word 'Connected'.").await
         .map(|_| "Connection successful!".to_string())
 }

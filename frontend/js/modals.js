@@ -125,6 +125,14 @@ async function saveRepo() {
     const path = document.getElementById('repo-path').value.trim();
     if (!path) { dom.toast('Please select a repository path', 'error'); return; }
 
+    if (!editingRepoId) {
+        const alreadyExists = reposList.some(r => r.path === path);
+        if (alreadyExists) {
+            dom.toast('This repository is already added', 'error');
+            return; // Cortamos la ejecución
+        }
+    }
+
     const repoObj = {
         id: editingRepoId || crypto.randomUUID(),
         path,

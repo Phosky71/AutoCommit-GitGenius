@@ -58,8 +58,7 @@ function renderRepos() {
         const dirPath  = parts.join('/');
         const pushLabel = dom.escHtml(`${repo.push_remote || 'origin'}/${repo.push_branch || 'main'}`);
         return `
-    <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}">
-      <div class="repo-card-header">
+      <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}" draggable="true">       <div class="repo-card-header">
         <div class="repo-path">
           <div class="repo-drag-handle" title="Drag to reorder">
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
@@ -115,37 +114,40 @@ function renderRepos() {
 function setupRepoDelegation() {
     const grid = document.getElementById('repos-grid');
 
-    // 1. Lógica para habilitar el arrastre SOLO desde el "handle" (grip icon)
-    grid.addEventListener('mousedown', e => {
-        if (e.target.closest('.repo-drag-handle')) {
-            const card = e.target.closest('.repo-card');
-            if (card) card.setAttribute('draggable', 'true');
-        }
-    });
-    grid.addEventListener('mouseup', e => {
-        const card = e.target.closest('.repo-card');
-        if (card && card.hasAttribute('draggable')) card.removeAttribute('draggable');
-    });
-
-    // 2. Eventos Drag & Drop
     let draggedEl = null;
+    let isDraggingHandle = false;
+
+    // Detectamos si el usuario ha pinchado EXACTAMENTE en el icono de los 6 puntitos
+    grid.addEventListener('mousedown', e => {
+        isDraggingHandle = !!e.target.closest('.repo-drag-handle');
+    });
 
     grid.addEventListener('dragstart', e => {
+        // Si intenta arrastrar la tarjeta desde cualquier otro lado (un texto, un hueco vacío), lo bloqueamos
+        if (!isDraggingHandle) {
+            e.preventDefault();
+            return;
+        }
+
         const card = e.target.closest('.repo-card');
         if (!card) return;
+
         draggedEl = card;
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', card.dataset.id);
-        setTimeout(() => card.classList.add('dragging'), 0);
+
+        // requestAnimationFrame evita que la tarjeta "desaparezca" visualmente al agarrarla
+        requestAnimationFrame(() => card.classList.add('dragging'));
     });
 
     grid.addEventListener('dragover', e => {
-        e.preventDefault();
+        e.preventDefault(); // Obligatorio para permitir que se "suelte" el elemento
         const target = e.target.closest('.repo-card:not(.dragging)');
+
         if (target && target !== draggedEl) {
             const rect = target.getBoundingClientRect();
-            // Cálculo diagonal para soporte en rejilla (Grid)
-            const isAfter = (e.clientX - rect.left - rect.width / 2) + (e.clientY - rect.top - rect.height / 2) > 0;
+            // Calculamos si el ratón pasó de la mitad de la tarjeta objetivo para insertarlo delante o detrás
+            const isAfter = (e.clientX - rect.left) > (rect.width / 2);
             target.parentNode.insertBefore(draggedEl, isAfter ? target.nextSibling : target);
         }
     });
@@ -153,14 +155,17 @@ function setupRepoDelegation() {
     grid.addEventListener('dragend', async e => {
         if (draggedEl) {
             draggedEl.classList.remove('dragging');
-            draggedEl.removeAttribute('draggable');
-            const newOrderIds = Array.from(grid.querySelectorAll('.repo-card')).map(c => c.dataset.id);
             draggedEl = null;
+            isDraggingHandle = false;
+
+            // Recogemos el orden visual en el que han quedado las tarjetas tras soltar
+            const newOrderIds = Array.from(grid.querySelectorAll('.repo-card')).map(c => c.dataset.id);
 
             try {
-                await api.reorderRepos(newOrderIds);
-                // Sincronizamos la lista local para no perder el orden al recargar
+                // Sincronizamos nuestra variable local
                 reposList.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+                // Avisamos al backend (Rust) para que lo guarde permanentemente
+                await api.reorderRepos(newOrderIds);
             } catch(err) {
                 dom.toast('Failed to save order', 'error');
             }

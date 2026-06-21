@@ -58,8 +58,7 @@ function renderRepos() {
         const dirPath  = parts.join('/');
         const pushLabel = dom.escHtml(`${repo.push_remote || 'origin'}/${repo.push_branch || 'main'}`);
         return `
-      <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}" draggable="true">       <div class="repo-card-header">
-        <div class="repo-path">
+<div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}" draggable="true">        <div class="repo-path">
           <div class="repo-drag-handle" title="Drag to reorder">
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
           </div>
@@ -114,16 +113,15 @@ function renderRepos() {
 function setupRepoDelegation() {
     const grid = document.getElementById('repos-grid');
 
+    // --- LÓGICA DE ARRASTRE (DRAG & DROP) A PRUEBA DE WEBVIEW2 ---
     let draggedEl = null;
     let isDraggingHandle = false;
 
-    // Detectamos si el usuario ha pinchado EXACTAMENTE en el icono de los 6 puntitos
     grid.addEventListener('mousedown', e => {
         isDraggingHandle = !!e.target.closest('.repo-drag-handle');
     });
 
     grid.addEventListener('dragstart', e => {
-        // Si intenta arrastrar la tarjeta desde cualquier otro lado (un texto, un hueco vacío), lo bloqueamos
         if (!isDraggingHandle) {
             e.preventDefault();
             return;
@@ -134,22 +132,36 @@ function setupRepoDelegation() {
 
         draggedEl = card;
         e.dataTransfer.effectAllowed = 'move';
+        // Obligatorio establecer datos para que Firefox/Webview2 inicien el arrastre
         e.dataTransfer.setData('text/plain', card.dataset.id);
 
-        // requestAnimationFrame evita que la tarjeta "desaparezca" visualmente al agarrarla
-        requestAnimationFrame(() => card.classList.add('dragging'));
+        setTimeout(() => {
+            if (draggedEl) draggedEl.classList.add('dragging');
+        }, 0);
+    });
+
+    grid.addEventListener('dragenter', e => {
+        e.preventDefault();
     });
 
     grid.addEventListener('dragover', e => {
-        e.preventDefault(); // Obligatorio para permitir que se "suelte" el elemento
-        const target = e.target.closest('.repo-card:not(.dragging)');
+        e.preventDefault(); // Permite que sea un objetivo de soltar (drop target)
+        e.dataTransfer.dropEffect = 'move'; // <- ESTO QUITA EL LOGO DE PROHIBIDO
 
-        if (target && target !== draggedEl) {
-            const rect = target.getBoundingClientRect();
-            // Calculamos si el ratón pasó de la mitad de la tarjeta objetivo para insertarlo delante o detrás
-            const isAfter = (e.clientX - rect.left) > (rect.width / 2);
-            target.parentNode.insertBefore(draggedEl, isAfter ? target.nextSibling : target);
-        }
+        if (!draggedEl) return;
+
+        const target = e.target.closest('.repo-card:not(.dragging)');
+        if (!target || target === draggedEl) return;
+
+        const rect = target.getBoundingClientRect();
+        const targetMidlineY = rect.top + (rect.height / 2);
+        const shouldInsertAfter = e.clientY > targetMidlineY;
+
+        grid.insertBefore(draggedEl, shouldInsertAfter ? target.nextSibling : target);
+    });
+
+    grid.addEventListener('drop', e => {
+        e.preventDefault();
     });
 
     grid.addEventListener('dragend', async e => {
@@ -158,13 +170,10 @@ function setupRepoDelegation() {
             draggedEl = null;
             isDraggingHandle = false;
 
-            // Recogemos el orden visual en el que han quedado las tarjetas tras soltar
             const newOrderIds = Array.from(grid.querySelectorAll('.repo-card')).map(c => c.dataset.id);
 
             try {
-                // Sincronizamos nuestra variable local
                 reposList.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
-                // Avisamos al backend (Rust) para que lo guarde permanentemente
                 await api.reorderRepos(newOrderIds);
             } catch(err) {
                 dom.toast('Failed to save order', 'error');

@@ -57,8 +57,11 @@ function renderRepos() {
         const repoName = parts.pop();
         const dirPath  = parts.join('/');
         const pushLabel = dom.escHtml(`${repo.push_remote || 'origin'}/${repo.push_branch || 'main'}`);
+
         return `
-<div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}" draggable="true">        <div class="repo-path">
+    <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}">
+      <div class="repo-card-header">
+        <div class="repo-path">
           <div class="repo-drag-handle" title="Drag to reorder">
              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
           </div>
@@ -112,27 +115,34 @@ function renderRepos() {
 
 function setupRepoDelegation() {
     const grid = document.getElementById('repos-grid');
-
-    // --- LÓGICA DE ARRASTRE (DRAG & DROP) A PRUEBA DE WEBVIEW2 ---
     let draggedEl = null;
-    let isDraggingHandle = false;
 
+    // 1. INYECTAR DRAGGABLE SOLO AL TOCAR EL MANGO (Puentea a Windows)
     grid.addEventListener('mousedown', e => {
-        isDraggingHandle = !!e.target.closest('.repo-drag-handle');
+        const handle = e.target.closest('.repo-drag-handle');
+        if (handle) {
+            const card = e.target.closest('.repo-card');
+            if (card) card.setAttribute('draggable', 'true');
+        }
     });
 
+    // Limpieza si sueltas el click sin mover
+    grid.addEventListener('mouseup', e => {
+        document.querySelectorAll('.repo-card[draggable="true"]').forEach(c => {
+            c.removeAttribute('draggable');
+        });
+    });
+
+    // 2. LÓGICA DRAG & DROP
     grid.addEventListener('dragstart', e => {
-        if (!isDraggingHandle) {
+        const card = e.target.closest('.repo-card');
+        if (!card || !card.hasAttribute('draggable')) {
             e.preventDefault();
             return;
         }
 
-        const card = e.target.closest('.repo-card');
-        if (!card) return;
-
         draggedEl = card;
         e.dataTransfer.effectAllowed = 'move';
-        // Obligatorio establecer datos para que Firefox/Webview2 inicien el arrastre
         e.dataTransfer.setData('text/plain', card.dataset.id);
 
         setTimeout(() => {
@@ -140,18 +150,16 @@ function setupRepoDelegation() {
         }, 0);
     });
 
-    grid.addEventListener('dragenter', e => {
-        e.preventDefault();
-    });
+    grid.addEventListener('dragenter', e => e.preventDefault());
 
     grid.addEventListener('dragover', e => {
-        e.preventDefault(); // Permite que sea un objetivo de soltar (drop target)
-        e.dataTransfer.dropEffect = 'move'; // <- ESTO QUITA EL LOGO DE PROHIBIDO
+        e.preventDefault(); // OBLIGATORIO PARA QUITAR EL LOGO DE PROHIBIDO
+        e.dataTransfer.dropEffect = 'move';
 
         if (!draggedEl) return;
 
         const target = e.target.closest('.repo-card:not(.dragging)');
-        if (!target || target === draggedEl) return;
+        if (!target) return;
 
         const rect = target.getBoundingClientRect();
         const targetMidlineY = rect.top + (rect.height / 2);
@@ -160,15 +168,17 @@ function setupRepoDelegation() {
         grid.insertBefore(draggedEl, shouldInsertAfter ? target.nextSibling : target);
     });
 
-    grid.addEventListener('drop', e => {
-        e.preventDefault();
-    });
+    grid.addEventListener('drop', e => e.preventDefault());
 
     grid.addEventListener('dragend', async e => {
         if (draggedEl) {
             draggedEl.classList.remove('dragging');
+            draggedEl.removeAttribute('draggable');
             draggedEl = null;
-            isDraggingHandle = false;
+
+            document.querySelectorAll('.repo-card[draggable="true"]').forEach(c => {
+                c.removeAttribute('draggable');
+            });
 
             const newOrderIds = Array.from(grid.querySelectorAll('.repo-card')).map(c => c.dataset.id);
 
@@ -181,6 +191,7 @@ function setupRepoDelegation() {
         }
     });
 
+    // --- DELEGACIÓN DE CLICKS ORIGINAL ---
     grid.addEventListener('change', e => {
         const toggle = e.target.closest('.repo-enabled-toggle');
         if (toggle) toggleRepo(toggle.dataset.id, toggle.checked);
@@ -306,14 +317,13 @@ async function togglePin(id) {
     repo.pinned = !repo.pinned;
 
     try {
-        // Si se acaba de fijar, lo movemos al principio del array localmente y avisamos al backend
         if (repo.pinned) {
             reposList = reposList.filter(r => r.id !== id);
             reposList.unshift(repo);
             const newOrder = reposList.map(r => r.id);
             await api.reorderRepos(newOrder);
         }
-        await api.updateRepo(repo); // Guardamos la bandera `pinned`
+        await api.updateRepo(repo);
         renderRepos();
     } catch (e) {
         dom.toast('Failed to pin/unpin: ' + e, 'error');

@@ -33,6 +33,7 @@ fn main() {
             add_repo,
             remove_repo,
             update_repo,
+            reorder_repos,
             get_repos,
             start_auto_commit,
             stop_auto_commit,

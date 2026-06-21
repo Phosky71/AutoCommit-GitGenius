@@ -58,13 +58,19 @@ function renderRepos() {
         const dirPath  = parts.join('/');
         const pushLabel = dom.escHtml(`${repo.push_remote || 'origin'}/${repo.push_branch || 'main'}`);
         return `
-    <div class="repo-card" id="repo-card-${repo.id}">
+    <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}">
       <div class="repo-card-header">
         <div class="repo-path">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--color-text-faint)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <div class="repo-drag-handle" title="Drag to reorder">
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--color-text-faint);margin-top:2px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           <div><span class="repo-path-dir">${dom.escHtml(dirPath)}/</span><span class="repo-path-name">${dom.escHtml(repoName)}</span></div>
         </div>
         <div class="repo-actions">
+          <button class="btn btn-ghost btn-icon repo-pin-btn ${repo.pinned ? 'active' : ''}" data-id="${repo.id}" title="${repo.pinned ? 'Unpin' : 'Pin to top'}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="${repo.pinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M12 17v5"/><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5l2 4.5H7l2-4.5z"/></svg>
+          </button>
           <label class="repo-toggle" title="${repo.enabled ? 'Enabled' : 'Paused'}">
             <input type="checkbox" class="repo-enabled-toggle" data-id="${repo.id}" ${repo.enabled ? 'checked' : ''}>
             <span class="repo-toggle-slider"></span>
@@ -108,12 +114,70 @@ function renderRepos() {
 
 function setupRepoDelegation() {
     const grid = document.getElementById('repos-grid');
+
+    // 1. Lógica para habilitar el arrastre SOLO desde el "handle" (grip icon)
+    grid.addEventListener('mousedown', e => {
+        if (e.target.closest('.repo-drag-handle')) {
+            const card = e.target.closest('.repo-card');
+            if (card) card.setAttribute('draggable', 'true');
+        }
+    });
+    grid.addEventListener('mouseup', e => {
+        const card = e.target.closest('.repo-card');
+        if (card && card.hasAttribute('draggable')) card.removeAttribute('draggable');
+    });
+
+    // 2. Eventos Drag & Drop
+    let draggedEl = null;
+
+    grid.addEventListener('dragstart', e => {
+        const card = e.target.closest('.repo-card');
+        if (!card) return;
+        draggedEl = card;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', card.dataset.id);
+        setTimeout(() => card.classList.add('dragging'), 0);
+    });
+
+    grid.addEventListener('dragover', e => {
+        e.preventDefault();
+        const target = e.target.closest('.repo-card:not(.dragging)');
+        if (target && target !== draggedEl) {
+            const rect = target.getBoundingClientRect();
+            // Cálculo diagonal para soporte en rejilla (Grid)
+            const isAfter = (e.clientX - rect.left - rect.width / 2) + (e.clientY - rect.top - rect.height / 2) > 0;
+            target.parentNode.insertBefore(draggedEl, isAfter ? target.nextSibling : target);
+        }
+    });
+
+    grid.addEventListener('dragend', async e => {
+        if (draggedEl) {
+            draggedEl.classList.remove('dragging');
+            draggedEl.removeAttribute('draggable');
+            const newOrderIds = Array.from(grid.querySelectorAll('.repo-card')).map(c => c.dataset.id);
+            draggedEl = null;
+
+            try {
+                await api.reorderRepos(newOrderIds);
+                // Sincronizamos la lista local para no perder el orden al recargar
+                reposList.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+            } catch(err) {
+                dom.toast('Failed to save order', 'error');
+            }
+        }
+    });
+
     grid.addEventListener('change', e => {
         const toggle = e.target.closest('.repo-enabled-toggle');
         if (toggle) toggleRepo(toggle.dataset.id, toggle.checked);
     });
+
     grid.addEventListener('click', e => {
         const target = e.target;
+
+        const pinBtn = target.closest('.repo-pin-btn');
+        if (pinBtn) { e.stopPropagation(); togglePin(pinBtn.dataset.id); return; }
+
         const ddBtn = target.closest('.repo-dropdown-btn');
         if (ddBtn) { e.stopPropagation(); toggleDropdown(ddBtn.dataset.id); return; }
 
@@ -219,5 +283,25 @@ export async function commitNow(id, path) {
             btn.disabled = false;
             btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" pointer-events="none"><polyline points="20 6 9 17 4 12"/></svg> Commit now`;
         }
+    }
+}
+
+async function togglePin(id) {
+    const repo = reposList.find(r => r.id === id);
+    if (!repo) return;
+    repo.pinned = !repo.pinned;
+
+    try {
+        // Si se acaba de fijar, lo movemos al principio del array localmente y avisamos al backend
+        if (repo.pinned) {
+            reposList = reposList.filter(r => r.id !== id);
+            reposList.unshift(repo);
+            const newOrder = reposList.map(r => r.id);
+            await api.reorderRepos(newOrder);
+        }
+        await api.updateRepo(repo); // Guardamos la bandera `pinned`
+        renderRepos();
+    } catch (e) {
+        dom.toast('Failed to pin/unpin: ' + e, 'error');
     }
 }

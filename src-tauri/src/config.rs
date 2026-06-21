@@ -79,6 +79,8 @@ pub struct RepoEntry {
     pub interval_minutes: u64,
     #[serde(default)]
     pub timer_enabled: bool,
+    #[serde(default)]
+    pub pinned: bool,
     pub enabled: bool,
     pub push_enabled: bool,
     pub push_remote: String,

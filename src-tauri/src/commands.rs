@@ -417,3 +417,16 @@ pub async fn open_url(url: String) -> crate::config::Result<()> {
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn reorder_repos(repo_ids: Vec<String>, state: State<'_, AppState>) -> Result<()> {
+    let mut c = state.config.lock().map_err(|e| e.to_string())?;
+
+    // Ordenamos el vector basándonos en el índice en el que aparecen los IDs en el frontend
+    c.repos.sort_by_cached_key(|r| {
+        repo_ids.iter().position(|id| id == &r.id).unwrap_or(usize::MAX)
+    });
+
+    crate::config::persist_config(&c)?;
+    Ok(())
+}

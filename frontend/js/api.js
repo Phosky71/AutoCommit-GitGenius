@@ -12,6 +12,7 @@ export const getRepos = () => invoke('get_repos');
 export const updateRepo = (repo) => invoke('update_repo', { repo });
 export const addRepo = (repo) => invoke('add_repo', { repo });
 export const removeRepo = (id) => invoke('remove_repo', { id });
+export const reorderRepos = (repoIds) => invoke('reorder_repos', { repoIds });
 export const selectDirectory = () => invoke('select_directory');
 export const validateRepoPath = (path) => invoke('validate_repo_path', { path });
 export const listRemoteBranches = (path) => invoke('list_remote_branches', { path });

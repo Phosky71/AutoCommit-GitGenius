@@ -479,3 +479,44 @@ a,button,[role=button],input,select,textarea{
     animation:spin .7s linear infinite;
     vertical-align:middle;flex-shrink:0;
 }
+
+/* ── REPO CARD PIN & DRAG MODS ───────────────────────── */
+.repo-card.pinned {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary) inset, var(--shadow-sm);
+}
+
+.repo-pin-btn {
+    color: var(--color-text-faint);
+}
+
+.repo-pin-btn.active {
+    color: var(--color-primary);
+}
+
+.repo-pin-btn:hover {
+    color: var(--color-primary-hover);
+}
+
+.repo-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    opacity: 0.3;
+    transition: opacity 0.2s, background 0.2s;
+    margin-right: 2px;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.repo-drag-handle:hover {
+    opacity: 1;
+    background: var(--color-surface-offset);
+}
+
+.repo-card.dragging {
+    opacity: 0.4;
+    border: 2px dashed var(--color-primary);
+    transform: scale(0.98);
+}

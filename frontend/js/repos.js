@@ -59,7 +59,7 @@ function renderRepos() {
         const pushLabel = dom.escHtml(`${repo.push_remote || 'origin'}/${repo.push_branch || 'main'}`);
 
         return `
-    <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}">
+    <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}" draggable="true">
       <div class="repo-card-header">
         <div class="repo-path">
           <div class="repo-drag-handle" title="Drag to reorder">
@@ -116,27 +116,19 @@ function renderRepos() {
 function setupRepoDelegation() {
     const grid = document.getElementById('repos-grid');
     let draggedEl = null;
+    let isDraggingHandle = false;
 
-    // 1. INYECTAR DRAGGABLE SOLO AL TOCAR EL MANGO (Puentea a Windows)
+    // Detectamos si el usuario ha hecho clic sobre el "mango" de 6 puntitos
     grid.addEventListener('mousedown', e => {
-        const handle = e.target.closest('.repo-drag-handle');
-        if (handle) {
-            const card = e.target.closest('.repo-card');
-            if (card) card.setAttribute('draggable', 'true');
-        }
+        isDraggingHandle = !!e.target.closest('.repo-drag-handle');
     });
 
-    // Limpieza si sueltas el click sin mover
-    grid.addEventListener('mouseup', e => {
-        document.querySelectorAll('.repo-card[draggable="true"]').forEach(c => {
-            c.removeAttribute('draggable');
-        });
-    });
-
-    // 2. LÓGICA DRAG & DROP
     grid.addEventListener('dragstart', e => {
         const card = e.target.closest('.repo-card');
-        if (!card || !card.hasAttribute('draggable')) {
+        if (!card) return;
+
+        // Si intentan arrastrar la tarjeta pero NO desde el mango, bloqueamos
+        if (!isDraggingHandle) {
             e.preventDefault();
             return;
         }
@@ -145,15 +137,18 @@ function setupRepoDelegation() {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', card.dataset.id);
 
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             if (draggedEl) draggedEl.classList.add('dragging');
-        }, 0);
+        });
     });
 
-    grid.addEventListener('dragenter', e => e.preventDefault());
+    // EVENTOS OBLIGATORIOS PARA WEBVIEW2 (Windows)
+    grid.addEventListener('dragenter', e => {
+        e.preventDefault();
+    });
 
     grid.addEventListener('dragover', e => {
-        e.preventDefault(); // OBLIGATORIO PARA QUITAR EL LOGO DE PROHIBIDO
+        e.preventDefault(); // Quita el logo de prohibido
         e.dataTransfer.dropEffect = 'move';
 
         if (!draggedEl) return;
@@ -168,17 +163,15 @@ function setupRepoDelegation() {
         grid.insertBefore(draggedEl, shouldInsertAfter ? target.nextSibling : target);
     });
 
-    grid.addEventListener('drop', e => e.preventDefault());
+    grid.addEventListener('drop', e => {
+        e.preventDefault(); // Evita que Windows intente "abrir" la tarjeta
+    });
 
     grid.addEventListener('dragend', async e => {
         if (draggedEl) {
             draggedEl.classList.remove('dragging');
-            draggedEl.removeAttribute('draggable');
             draggedEl = null;
-
-            document.querySelectorAll('.repo-card[draggable="true"]').forEach(c => {
-                c.removeAttribute('draggable');
-            });
+            isDraggingHandle = false;
 
             const newOrderIds = Array.from(grid.querySelectorAll('.repo-card')).map(c => c.dataset.id);
 
@@ -191,7 +184,7 @@ function setupRepoDelegation() {
         }
     });
 
-    // --- DELEGACIÓN DE CLICKS ORIGINAL ---
+    // --- EVENTOS DE CLIC (Restaurados y funcionando) ---
     grid.addEventListener('change', e => {
         const toggle = e.target.closest('.repo-enabled-toggle');
         if (toggle) toggleRepo(toggle.dataset.id, toggle.checked);

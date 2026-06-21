@@ -52,19 +52,30 @@ function renderRepos() {
     empty.style.display = 'none';
     if (sub) sub.textContent = `${reposList.length} repositor${reposList.length === 1 ? 'y' : 'ies'} configured`;
 
-    grid.innerHTML = reposList.map(repo => {
+    grid.innerHTML = reposList.map((repo, index) => {
         const parts    = repo.path.replace(/\\/g, '/').split('/');
         const repoName = parts.pop();
         const dirPath  = parts.join('/');
         const pushLabel = dom.escHtml(`${repo.push_remote || 'origin'}/${repo.push_branch || 'main'}`);
 
+        // Comprobamos si es el primero o el último para atenuar las flechas visualmente
+        const isFirst = index === 0;
+        const isLast = index === reposList.length - 1;
+
         return `
-    <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}" draggable="true">
+    <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}">
       <div class="repo-card-header">
         <div class="repo-path">
-          <div class="repo-drag-handle" title="Drag to reorder">
-             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+          
+          <div class="repo-order-controls" style="display:flex; flex-direction:column; margin-right:8px; gap:2px; justify-content:center;">
+            <button class="repo-move-up" data-id="${repo.id}" title="Move up" style="background:none; border:none; padding:0; cursor:${isFirst ? 'default' : 'pointer'}; color:var(--color-text-faint); opacity:${isFirst ? '0.3' : '1'}; height:12px; display:flex; align-items:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+            <button class="repo-move-down" data-id="${repo.id}" title="Move down" style="background:none; border:none; padding:0; cursor:${isLast ? 'default' : 'pointer'}; color:var(--color-text-faint); opacity:${isLast ? '0.3' : '1'}; height:12px; display:flex; align-items:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
           </div>
+          
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--color-text-faint);margin-top:2px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           <div><span class="repo-path-dir">${dom.escHtml(dirPath)}/</span><span class="repo-path-name">${dom.escHtml(repoName)}</span></div>
         </div>
@@ -115,76 +126,7 @@ function renderRepos() {
 
 function setupRepoDelegation() {
     const grid = document.getElementById('repos-grid');
-    let draggedEl = null;
-    let isDraggingHandle = false;
 
-    // Detectamos si el usuario ha hecho clic sobre el "mango" de 6 puntitos
-    grid.addEventListener('mousedown', e => {
-        isDraggingHandle = !!e.target.closest('.repo-drag-handle');
-    });
-
-    grid.addEventListener('dragstart', e => {
-        const card = e.target.closest('.repo-card');
-        if (!card) return;
-
-        // Si intentan arrastrar la tarjeta pero NO desde el mango, bloqueamos
-        if (!isDraggingHandle) {
-            e.preventDefault();
-            return;
-        }
-
-        draggedEl = card;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', card.dataset.id);
-
-        requestAnimationFrame(() => {
-            if (draggedEl) draggedEl.classList.add('dragging');
-        });
-    });
-
-    // EVENTOS OBLIGATORIOS PARA WEBVIEW2 (Windows)
-    grid.addEventListener('dragenter', e => {
-        e.preventDefault();
-    });
-
-    grid.addEventListener('dragover', e => {
-        e.preventDefault(); // Quita el logo de prohibido
-        e.dataTransfer.dropEffect = 'move';
-
-        if (!draggedEl) return;
-
-        const target = e.target.closest('.repo-card:not(.dragging)');
-        if (!target) return;
-
-        const rect = target.getBoundingClientRect();
-        const targetMidlineY = rect.top + (rect.height / 2);
-        const shouldInsertAfter = e.clientY > targetMidlineY;
-
-        grid.insertBefore(draggedEl, shouldInsertAfter ? target.nextSibling : target);
-    });
-
-    grid.addEventListener('drop', e => {
-        e.preventDefault(); // Evita que Windows intente "abrir" la tarjeta
-    });
-
-    grid.addEventListener('dragend', async e => {
-        if (draggedEl) {
-            draggedEl.classList.remove('dragging');
-            draggedEl = null;
-            isDraggingHandle = false;
-
-            const newOrderIds = Array.from(grid.querySelectorAll('.repo-card')).map(c => c.dataset.id);
-
-            try {
-                reposList.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
-                await api.reorderRepos(newOrderIds);
-            } catch(err) {
-                dom.toast('Failed to save order', 'error');
-            }
-        }
-    });
-
-    // --- EVENTOS DE CLIC (Restaurados y funcionando) ---
     grid.addEventListener('change', e => {
         const toggle = e.target.closest('.repo-enabled-toggle');
         if (toggle) toggleRepo(toggle.dataset.id, toggle.checked);
@@ -192,6 +134,15 @@ function setupRepoDelegation() {
 
     grid.addEventListener('click', e => {
         const target = e.target;
+
+        // -----------------------------------------------------
+        // NUEVO: Delegación de clics en las flechas de ordenación
+        const moveUpBtn = target.closest('.repo-move-up');
+        if (moveUpBtn) { e.stopPropagation(); moveRepo(moveUpBtn.dataset.id, -1); return; }
+
+        const moveDownBtn = target.closest('.repo-move-down');
+        if (moveDownBtn) { e.stopPropagation(); moveRepo(moveDownBtn.dataset.id, 1); return; }
+        // -----------------------------------------------------
 
         const pinBtn = target.closest('.repo-pin-btn');
         if (pinBtn) { e.stopPropagation(); togglePin(pinBtn.dataset.id); return; }
@@ -221,6 +172,31 @@ function setupRepoDelegation() {
         }
     });
 }
+
+// --- LÓGICA DE MOVIMIENTO INFALIBLE ---
+async function moveRepo(id, direction) {
+    const index = reposList.findIndex(r => r.id === id);
+    if (index === -1) return;
+
+    const newIndex = index + direction;
+    // Evitar salirnos del array
+    if (newIndex < 0 || newIndex >= reposList.length) return;
+
+    // Intercambiar las posiciones en la memoria local
+    const temp = reposList[index];
+    reposList[index] = reposList[newIndex];
+    reposList[newIndex] = temp;
+
+    // Guardar el nuevo orden en Rust
+    const newOrderIds = reposList.map(r => r.id);
+    try {
+        await api.reorderRepos(newOrderIds);
+        renderRepos(); // Refrescar la pantalla instantáneamente
+    } catch (e) {
+        dom.toast('Failed to reorder: ' + e, 'error');
+    }
+}
+// --------------------------------------
 
 function toggleDropdown(id) {
     const menu = document.getElementById(`ddm-${id}`);

@@ -62,6 +62,11 @@ function renderRepos() {
         const isFirst = index === 0;
         const isLast = index === reposList.length - 1;
 
+        // NUEVO: Lógica visual para el modo de trigger (IA vs Intervalo)
+        const triggerModeStr = repo.trigger_mode === 'ai'
+            ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2Z"/><path d="M12 12 21.1 5.8"/></svg> AI checks every ${repo.interval_minutes}m`
+            : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Every ${repo.interval_minutes}m`;
+
         return `
     <div class="repo-card ${repo.pinned ? 'pinned' : ''}" id="repo-card-${repo.id}" data-id="${repo.id}">
       <div class="repo-card-header">
@@ -104,7 +109,7 @@ function renderRepos() {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg><span>—</span>
         </div>
         <div class="repo-meta-item">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Every ${repo.interval_minutes}m
+          ${triggerModeStr}
         </div>
         ${repo.push_enabled ? `<div class="repo-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>${pushLabel}</div>` : ''}
         ${repo.last_commit_time ? `<div class="repo-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Last ${dom.formatRelTime(repo.last_commit_time)}</div>` : ''}

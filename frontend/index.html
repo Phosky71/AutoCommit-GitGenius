@@ -313,20 +313,28 @@
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label" for="repo-interval">Interval (min)</label>
-                    <input id="repo-interval" class="form-input" type="number" min="1" max="1440" value="30">
-                    <p class="form-hint">How often to auto-commit</p>
+                    <label class="form-label" for="repo-trigger-mode">Trigger Mode</label>
+                    <select id="repo-trigger-mode" class="form-select">
+                        <option value="interval">Time Interval</option>
+                        <option value="ai">AI Smart Detect</option>
+                    </select>
                 </div>
+                <div class="form-group">
+                    <label class="form-label" for="repo-interval" id="repo-interval-label">Interval (min)</label>
+                    <input id="repo-interval" class="form-input" type="number" min="1" max="1440" value="30">
+                    <p class="form-hint" id="repo-interval-hint">How often to auto-commit</p>
+                </div>
+            </div>
+            <div class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="repo-cooldown">Cooldown (min)</label>
                     <input id="repo-cooldown" class="form-input" type="number" min="0" max="120" value="5">
                     <p class="form-hint">Min. time between commits</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="repo-prefix">Commit prefix <span
-                        style="font-weight:400;text-transform:none">(optional)</span></label>
-                <input id="repo-prefix" class="form-input" type="text" placeholder="e.g. auto:">
+                <div class="form-group">
+                    <label class="form-label" for="repo-prefix">Commit prefix <span style="font-weight:400;text-transform:none">(optional)</span></label>
+                    <input id="repo-prefix" class="form-input" type="text" placeholder="e.g. auto:">
+                </div>
             </div>
             <div class="toggle-row">
                 <div>

@@ -16,6 +16,9 @@ export function initModals() {
     document.getElementById('repo-path').addEventListener('click', pickDirectory);
     document.getElementById('repo-push-enabled').addEventListener('change', togglePushBranch);
 
+    // NUEVO: Listener para el cambio de modo
+    document.getElementById('repo-trigger-mode').addEventListener('change', updateIntervalLabels);
+
     // Approval
     document.getElementById('btn-confirm-approval').addEventListener('click', confirmApproval);
 
@@ -42,6 +45,21 @@ export function initModals() {
     });
 }
 
+// --- NUEVO: Función para actualizar los labels visualmente ---
+function updateIntervalLabels() {
+    const mode = document.getElementById('repo-trigger-mode').value;
+    const label = document.getElementById('repo-interval-label');
+    const hint = document.getElementById('repo-interval-hint');
+
+    if (mode === 'ai') {
+        label.textContent = 'Polling Rate (min)';
+        hint.textContent = 'How often AI checks for readiness';
+    } else {
+        label.textContent = 'Interval (min)';
+        hint.textContent = 'How often to auto-commit';
+    }
+}
+
 // --- ADD / EDIT REPO ---
 export function openEditRepoModal(id) {
     editingRepoId = id;
@@ -53,7 +71,13 @@ export function openEditRepoModal(id) {
     document.getElementById('repo-edit-id').value = id || '';
     document.getElementById('repo-path').value = repo ? repo.path : '';
     document.getElementById('repo-path-hint').textContent = '';
-    document.getElementById('repo-interval').value = repo ? repo.interval_minutes : 30; // Bug fix #2
+
+    // NUEVO: Cargar el trigger mode y actualizar labels
+    const triggerMode = repo ? (repo.trigger_mode || 'interval') : 'interval';
+    document.getElementById('repo-trigger-mode').value = triggerMode;
+    updateIntervalLabels();
+
+    document.getElementById('repo-interval').value = repo ? repo.interval_minutes : 30;
     document.getElementById('repo-cooldown').value = repo ? repo.cooldown_minutes : 5;
     document.getElementById('repo-prefix').value = repo ? repo.commit_prefix : '';
 
@@ -129,13 +153,14 @@ async function saveRepo() {
         const alreadyExists = reposList.some(r => r.path === path);
         if (alreadyExists) {
             dom.toast('This repository is already added', 'error');
-            return; // Cortamos la ejecución
+            return;
         }
     }
 
     const repoObj = {
         id: editingRepoId || crypto.randomUUID(),
         path,
+        trigger_mode: document.getElementById('repo-trigger-mode').value, // NUEVO
         interval_minutes: parseInt(document.getElementById('repo-interval').value) || 30,
         timer_enabled: false,
         enabled: true,
@@ -250,8 +275,6 @@ async function confirmApproval() {
         dom.toast(`Committed: ${shortMessage}`, 'success', 5000);
         loadRepos();
 
-        // Comprobar la sección activa desde el main es algo complejo por los imports circulares,
-        // así que forzamos la carga del history de forma segura:
         if (document.getElementById('panel-history').classList.contains('active')) {
             loadHistory();
         }

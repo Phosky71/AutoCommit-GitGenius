@@ -3,6 +3,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 pub type Result<T> = std::result::Result<T, String>;
 
@@ -72,10 +74,22 @@ impl Default for SmartMode {
 
 // ---------- MULTI-REPO ----------
 
+pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
+}
+
+fn default_trigger_mode() -> String { "interval".to_string() }
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RepoEntry {
     pub id: String,
     pub path: String,
+    #[serde(default = "default_trigger_mode")]
+    pub trigger_mode: String,
+    #[serde(skip)]
+    pub last_checked_diff_hash: u64,
     pub interval_minutes: u64,
     #[serde(default)]
     pub timer_enabled: bool,
@@ -88,6 +102,7 @@ pub struct RepoEntry {
     pub commit_prefix: String,
     pub last_commit_time: u64,
     pub cooldown_minutes: u64,
+
 }
 
 // ---------- HISTORY ----------

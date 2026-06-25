@@ -60,6 +60,48 @@ pub async fn start_auto_commit(
                 if elapsed_minutes < repo.interval_minutes { continue; }
 
                 let path          = repo.path.clone();
+                let trigger_mode  = repo.trigger_mode.clone();
+
+                // --- NUEVO: AI SMART TRIGGER LOGIC ---
+                if trigger_mode == "ai" {
+                    // Pre-cargamos los cambios para ver el diff real
+                    let _ = crate::git::git_command(&path).args(["add", "."]).status();
+
+                    if let Ok(out) = crate::git::git_command(&path).args(["diff", "--cached"]).output() {
+                        let diff_content = String::from_utf8_lossy(&out.stdout).to_string();
+
+                        if diff_content.trim().is_empty() {
+                            continue; // Nada que commitear
+                        }
+
+                        let current_hash = crate::config::calculate_hash(&diff_content);
+
+                        // AHORRO DE TOKENS: Si el diff es idéntico a la última comprobación, saltamos
+                        if current_hash == repo.last_checked_diff_hash {
+                            continue;
+                        }
+
+                        // Actualizamos el hash en el estado global para la próxima vez
+                        if let Ok(mut c) = config_arc.lock() {
+                            if let Some(r) = c.repos.iter_mut().find(|r| r.id == repo.id) {
+                                r.last_checked_diff_hash = current_hash;
+                            }
+                        }
+
+                        // Preguntamos al LLM si el código está listo
+                        let is_ready = crate::llm::ask_llm_if_ready(
+                            &provider, &base_url, &model, &api_key, &diff_content
+                        ).await.unwrap_or(false);
+
+                        if !is_ready {
+                            continue; // La IA decidió que aún no está listo
+                        }
+                    } else {
+                        continue; // Fallo al intentar extraer el diff
+                    }
+                }
+                // --- FIN AI SMART TRIGGER ---
+
                 let push_enabled  = repo.push_enabled;
                 let push_remote   = repo.push_remote.clone();
                 let push_branch   = repo.push_branch.clone();

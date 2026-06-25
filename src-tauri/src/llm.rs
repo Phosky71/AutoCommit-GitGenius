@@ -82,52 +82,41 @@ pub struct AnthropicContent {
 // ---------- LLM CALL ----------
 
 pub async fn call_llm(
+    provider: &LlmProvider, base_url: &str, model: &str, api_key: &str, user_content: &str,
+) -> Result<String> {
+    call_llm_with_system(provider, base_url, model, api_key, SYSTEM_PROMPT, user_content).await
+}
+
+pub async fn call_llm_with_system(
     provider: &LlmProvider,
     base_url: &str,
     model: &str,
     api_key: &str,
+    system_prompt: &str,
     user_content: &str,
 ) -> Result<String> {
     if provider.is_anthropic() {
         let endpoint = format!("{}/messages", base_url.trim_end_matches('/'));
         let body = AnthropicRequest {
             model: model.to_string(),
-            system: SYSTEM_PROMPT.to_string(),
+            system: system_prompt.to_string(),
             max_tokens: 256,
-            messages: vec![Message {
-                role: "user".to_string(),
-                content: user_content.to_string(),
-            }],
+            messages: vec![Message { role: "user".to_string(), content: user_content.to_string() }],
         };
-        let resp = HTTP_CLIENT
-            .post(&endpoint)
+        let resp = HTTP_CLIENT.post(&endpoint)
             .header("x-api-key", api_key)
             .header("anthropic-version", "2023-06-01")
-            .header("content-type", "application/json")
-            .json(&body)
-            .send()
-            .await
+            .json(&body).send().await
             .map_err(|e| format!("Anthropic connection failed: {}", e))?;
 
         if !resp.status().is_success() {
-            return Err(format!(
-                "Anthropic error (HTTP {}): {}",
-                resp.status(),
-                resp.text().await.unwrap_or_default()
-            ));
+            return Err(format!("Anthropic error (HTTP {}): {}", resp.status(), resp.text().await.unwrap_or_default()));
         }
-
-        // BUG FIX: Leer la respuesta como texto primero para tenerla de contexto en caso de error de parseo
         let raw_text = resp.text().await.map_err(|e| format!("Failed to read Anthropic response: {}", e))?;
-
         let parsed: AnthropicResponse = serde_json::from_str(&raw_text)
             .map_err(|e| format!("Parse error: {}\nRaw response: {}", e, raw_text))?;
 
-        return parsed
-            .content
-            .into_iter()
-            .next()
-            .map(|c| c.text)
+        return parsed.content.into_iter().next().map(|c| c.text)
             .ok_or_else(|| "Anthropic returned empty content array".to_string());
     }
 
@@ -137,50 +126,48 @@ pub async fn call_llm(
         temperature: 0.3,
         max_tokens: Some(256),
         messages: vec![
-            Message {
-                role: "system".to_string(),
-                content: SYSTEM_PROMPT.to_string(),
-            },
-            Message {
-                role: "user".to_string(),
-                content: user_content.to_string(),
-            },
+            Message { role: "system".to_string(), content: system_prompt.to_string() },
+            Message { role: "user".to_string(), content: user_content.to_string() },
         ],
     };
 
     let mut req = HTTP_CLIENT.post(&endpoint).json(&body);
-    if !api_key.is_empty() {
-        req = req.header("Authorization", format!("Bearer {}", api_key));
-    }
-    if *provider == LlmProvider::OpenRouter {
-        req = req
-            .header("HTTP-Referer", "https://github.com/auto-commit-tauri") // Idealmente, cambia a la URL de tu repo real
-            .header("X-Title", "Auto Commit");
-    }
+    if !api_key.is_empty() { req = req.header("Authorization", format!("Bearer {}", api_key)); }
 
-    let resp = req
-        .send()
-        .await
+    let resp = req.send().await
         .map_err(|e| format!("Connection to {} failed: {}", base_url, e))?;
 
     if !resp.status().is_success() {
-        return Err(format!(
-            "LLM API error (HTTP {}): {}",
-            resp.status(),
-            resp.text().await.unwrap_or_default()
-        ));
+        return Err(format!("LLM API error (HTTP {}): {}", resp.status(), resp.text().await.unwrap_or_default()));
     }
-
-    // BUG FIX: Leer texto en crudo para mejorar los mensajes de error
     let raw_text = resp.text().await.map_err(|e| format!("Failed to read LLM response: {}", e))?;
-
     let parsed: ChatCompletionResponse = serde_json::from_str(&raw_text)
         .map_err(|e| format!("Parse error: {}\nRaw response: {}", e, raw_text))?;
 
-    parsed
-        .choices
-        .into_iter()
-        .next()
-        .map(|c| c.message.content)
+    parsed.choices.into_iter().next().map(|c| c.message.content)
         .ok_or_else(|| "LLM returned no choices".to_string())
 }
+
+pub async fn ask_llm_if_ready(
+    provider: &LlmProvider, base_url: &str, model: &str, api_key: &str, diff_content: &str,
+) -> Result<bool> {
+    let ai_system_prompt = "You are an extremely strict AI Git Assistant. Your ONLY job is to decide if a diff is ready to be committed. \
+    Consider it NOT ready if: it has obvious unfinished lines, syntax errors, or is too trivial (e.g., just a console.log). \
+    If it is a logical, coherent unit of work, answer strictly with 'YES'. Otherwise, answer strictly with 'NO'. Never explain your reasoning.";
+
+    // Truncar para no quemar tokens con diffs masivos en la evaluación
+    let max_diff = 4000;
+    let diff_text = if diff_content.len() > max_diff {
+        format!("(Diff truncated)...\n{}", &diff_content[..max_diff])
+    } else {
+        diff_content.to_string()
+    };
+
+    let user_prompt = format!("Analyze this diff:\n{}", diff_text);
+
+    let response = call_llm_with_system(provider, base_url, model, api_key, ai_system_prompt, &user_prompt).await?;
+
+    // Evaluamos de forma segura si respondió YES
+    Ok(response.trim().to_uppercase().starts_with("YES"))
+}
+
